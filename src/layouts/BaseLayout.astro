@@ -1,0 +1,63 @@
+---
+import "../styles/global.css";
+import type { AlternateLink, Locale } from "../content/site";
+import { localeContent, localeLabels, locales, siteName } from "../content/site";
+
+type Props = {
+  locale: Locale;
+  title: string;
+  description: string;
+  canonicalPath: string;
+  alternates?: AlternateLink[];
+};
+
+const { locale, title, description, canonicalPath, alternates = [] } = Astro.props;
+const currentLocaleContent = localeContent[locale];
+const site = Astro.site ?? new URL("https://example.com");
+const canonicalUrl = new URL(canonicalPath, site).toString();
+---
+
+<!doctype html>
+<html lang={currentLocaleContent.htmlLang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
+    {alternates.map((alternate) => (
+      <link
+        rel="alternate"
+        hreflang={alternate.hreflang}
+        href={new URL(alternate.path, site).toString()}
+      />
+    ))}
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={siteName} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="site-header">
+        <a class="brand" href={`/${locale}/`}>{siteName}</a>
+        <nav class="locale-nav" aria-label={currentLocaleContent.switchLabel}>
+          {locales.map((item) => (
+            <a
+              class:list={["locale-link", { active: item === locale }]}
+              href={canonicalPath === `/${locale}/`
+                ? `/${item}/`
+                : canonicalPath.replace(`/${locale}/`, `/${item}/`)}
+            >
+              {localeLabels[item]}
+            </a>
+          ))}
+        </nav>
+      </header>
+      <main class="site-main">
+        <slot />
+      </main>
+    </div>
+  </body>
+</html>

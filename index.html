@@ -1,0 +1,1640 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Klondike 纸牌</title>
+  <style>
+    :root {
+      --bg-start: #1f6f43;
+      --bg-end: #0f4f2e;
+      --slot: rgba(255, 255, 255, 0.16);
+      --slot-border: rgba(255, 255, 255, 0.35);
+      --card-w: 92px;
+      --card-h: 128px;
+      --tableau-gap: 28px;
+      --text: #f2f7f4;
+      --btn-bg: rgba(255, 255, 255, 0.12);
+      --btn-bg-hover: rgba(255, 255, 255, 0.2);
+      --btn-border: rgba(255, 255, 255, 0.28);
+      --red: #c63030;
+      --black: #1f2a37;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 10% 10%, rgba(255, 255, 255, 0.12), transparent 35%),
+        radial-gradient(circle at 90% 20%, rgba(255, 255, 255, 0.06), transparent 40%),
+        linear-gradient(140deg, var(--bg-start), var(--bg-end));
+    }
+
+    .app {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 14px 18px 26px;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    button {
+      background: var(--btn-bg);
+      color: var(--text);
+      border: 1px solid var(--btn-border);
+      border-radius: 8px;
+      font-size: 14px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: var(--btn-bg-hover);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    .status {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .status-group {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .timer {
+      min-width: 72px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+    }
+
+    .board {
+      display: grid;
+      grid-template-rows: auto auto;
+      gap: 18px;
+    }
+
+    .top-row {
+      display: grid;
+      grid-template-columns: repeat(2, var(--card-w)) 1fr repeat(4, var(--card-w));
+      align-items: start;
+      gap: 16px;
+    }
+
+    .tableau-row {
+      display: grid;
+      grid-template-columns: repeat(7, var(--card-w));
+      gap: 16px;
+      align-items: start;
+    }
+
+    .pile {
+      width: var(--card-w);
+      min-height: var(--card-h);
+      border-radius: 8px;
+      border: 2px dashed var(--slot-border);
+      background: var(--slot);
+      position: relative;
+    }
+
+    .pile.drop-target {
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.26) inset;
+    }
+
+    .pile.hint-pile {
+      box-shadow:
+        0 0 0 3px rgba(255, 241, 118, 0.9) inset,
+        0 0 16px rgba(255, 241, 118, 0.45);
+      border-color: rgba(255, 241, 118, 0.95);
+    }
+
+    .waste {
+      border-style: solid;
+    }
+
+    .tableau-pile {
+      min-height: calc(var(--card-h) + 12 * var(--tableau-gap));
+      border-style: solid;
+    }
+
+    .card {
+      width: var(--card-w);
+      height: var(--card-h);
+      border-radius: 8px;
+      position: absolute;
+      left: 0;
+      top: 0;
+      border: 1px solid rgba(0, 0, 0, 0.36);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+      background: #fff;
+      color: var(--black);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 6px;
+      font-weight: 700;
+    }
+
+    .card.real-face {
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+      padding: 0;
+      overflow: visible;
+    }
+
+    .card.real-face playing-card {
+      display: block;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .card.real-face playing-card img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .card.red {
+      color: var(--red);
+    }
+
+    .card.face-down {
+      border-color: rgba(255, 255, 255, 0.35);
+      background:
+        linear-gradient(45deg, rgba(255, 255, 255, 0.1) 25%, transparent 25%) -8px 0/16px 16px,
+        linear-gradient(-45deg, rgba(255, 255, 255, 0.1) 25%, transparent 25%) -8px 0/16px 16px,
+        linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.1) 75%) -8px 0/16px 16px,
+        linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.1) 75%) -8px 0/16px 16px,
+        #204d95;
+      color: #fff;
+      justify-content: center;
+      align-items: center;
+      font-size: 24px;
+    }
+
+    .rank-top,
+    .rank-bottom {
+      line-height: 1;
+      font-size: 18px;
+    }
+
+    .rank-bottom {
+      align-self: flex-end;
+      transform: rotate(180deg);
+    }
+
+    .card.reveal-slow {
+      animation: flipReveal 420ms ease;
+      transform-origin: left center;
+    }
+
+    .card.hint-card {
+      filter: drop-shadow(0 0 14px rgba(255, 241, 118, 0.85));
+      animation: hintPulse 1s ease-in-out infinite;
+    }
+
+    @keyframes flipReveal {
+      0% {
+        transform: perspective(540px) rotateY(88deg);
+      }
+      100% {
+        transform: perspective(540px) rotateY(0deg);
+      }
+    }
+
+    @keyframes hintPulse {
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-3px);
+      }
+    }
+
+    .foundation-empty,
+    .stock-empty,
+    .waste-empty,
+    .tableau-empty {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.65);
+      pointer-events: none;
+    }
+
+    .win-banner {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      font-weight: 700;
+      width: fit-content;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="toolbar">
+      <button id="new-game-btn">新游戏</button>
+      <button id="draw-toggle-btn">抽牌: 1</button>
+      <button id="undo-btn">撤销</button>
+      <button id="auto-btn">自动收牌</button>
+      <button id="hint-btn">提示</button>
+      <button id="sound-toggle-btn">音效: 开</button>
+      <div class="status-group">
+        <div class="status" id="status-text">准备中...</div>
+        <div class="status timer" id="timer-text">00:00</div>
+      </div>
+    </div>
+    <div class="board">
+      <div class="top-row">
+        <div class="pile" id="stock-pile" data-pile-type="stock"></div>
+        <div class="pile waste" id="waste-pile" data-pile-type="waste"></div>
+        <div></div>
+        <div class="pile" id="foundation-hearts" data-pile-type="foundation" data-suit="hearts"></div>
+        <div class="pile" id="foundation-diamonds" data-pile-type="foundation" data-suit="diamonds"></div>
+        <div class="pile" id="foundation-clubs" data-pile-type="foundation" data-suit="clubs"></div>
+        <div class="pile" id="foundation-spades" data-pile-type="foundation" data-suit="spades"></div>
+      </div>
+      <div class="tableau-row" id="tableau-row"></div>
+    </div>
+    <div id="win-banner" class="win-banner" hidden>你赢了！点击“新游戏”再来一局。</div>
+  </div>
+
+  <script src="./elements.cardmeister.full.js"></script>
+  <script>
+    (function () {
+      const SUITS = ["hearts", "diamonds", "clubs", "spades"];
+      const FLIP_REVEAL_DELAY_MS = 380;
+      const FLIP_ANIM_ACTIVE_MS = 520;
+      const SUIT_SYMBOL = {
+        hearts: "♥",
+        diamonds: "♦",
+        clubs: "♣",
+        spades: "♠"
+      };
+      const SUIT_PLACEHOLDER = {
+        hearts: "♥",
+        diamonds: "♦",
+        clubs: "♣",
+        spades: "♠"
+      };
+      const RANK_TEXT = {
+        1: "A", 2: "2", 3: "3", 4: "4", 5: "5", 6: "6", 7: "7",
+        8: "8", 9: "9", 10: "10", 11: "J", 12: "Q", 13: "K"
+      };
+
+      const SETTINGS = {
+        drawCount: 1,
+        soundEnabled: true
+      };
+
+      const els = {
+        stock: document.getElementById("stock-pile"),
+        waste: document.getElementById("waste-pile"),
+        tableauRow: document.getElementById("tableau-row"),
+        status: document.getElementById("status-text"),
+        timer: document.getElementById("timer-text"),
+        btnNew: document.getElementById("new-game-btn"),
+        btnDrawToggle: document.getElementById("draw-toggle-btn"),
+        btnUndo: document.getElementById("undo-btn"),
+        btnAuto: document.getElementById("auto-btn"),
+        btnHint: document.getElementById("hint-btn"),
+        btnSoundToggle: document.getElementById("sound-toggle-btn"),
+        foundations: {
+          hearts: document.getElementById("foundation-hearts"),
+          diamonds: document.getElementById("foundation-diamonds"),
+          clubs: document.getElementById("foundation-clubs"),
+          spades: document.getElementById("foundation-spades")
+        },
+        winBanner: document.getElementById("win-banner")
+      };
+
+      const game = {
+        cardsById: {},
+        tableau: [[], [], [], [], [], [], []],
+        stock: [],
+        waste: [],
+        foundation: {
+          hearts: [],
+          diamonds: [],
+          clubs: [],
+          spades: []
+        },
+        history: [],
+        status: "playing",
+        dragPayload: null,
+        animatingFlip: false,
+        flipTimeoutId: null,
+        timerId: null,
+        elapsedSeconds: 0,
+        audioAssets: {},
+        hint: null,
+        hintTimeoutId: null,
+        transientStatus: ""
+      };
+
+      function cloneStateForHistory() {
+        return {
+          cardsById: structuredClone(game.cardsById),
+          tableau: game.tableau.map((pile) => pile.slice()),
+          stock: game.stock.slice(),
+          waste: game.waste.slice(),
+          foundation: {
+            hearts: game.foundation.hearts.slice(),
+            diamonds: game.foundation.diamonds.slice(),
+            clubs: game.foundation.clubs.slice(),
+            spades: game.foundation.spades.slice()
+          },
+          status: game.status
+        };
+      }
+
+      function restoreFromSnapshot(snapshot) {
+        game.cardsById = structuredClone(snapshot.cardsById);
+        game.tableau = snapshot.tableau.map((pile) => pile.slice());
+        game.stock = snapshot.stock.slice();
+        game.waste = snapshot.waste.slice();
+        game.foundation = {
+          hearts: snapshot.foundation.hearts.slice(),
+          diamonds: snapshot.foundation.diamonds.slice(),
+          clubs: snapshot.foundation.clubs.slice(),
+          spades: snapshot.foundation.spades.slice()
+        };
+        game.status = snapshot.status;
+      }
+
+      function pushHistory() {
+        game.history.push(cloneStateForHistory());
+      }
+
+      function createDeck() {
+        const deck = [];
+        let idCounter = 1;
+        for (const suit of SUITS) {
+          for (let rank = 1; rank <= 13; rank += 1) {
+            deck.push({
+              id: "c" + String(idCounter),
+              suit,
+              rank,
+              color: (suit === "hearts" || suit === "diamonds") ? "red" : "black",
+              faceUp: false
+            });
+            idCounter += 1;
+          }
+        }
+        return shuffle(deck);
+      }
+
+      function shuffle(arr) {
+        const out = arr.slice();
+        for (let i = out.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          const temp = out[i];
+          out[i] = out[j];
+          out[j] = temp;
+        }
+        return out;
+      }
+
+      function startNewGame() {
+        clearHint();
+        if (game.flipTimeoutId) {
+          window.clearTimeout(game.flipTimeoutId);
+          game.flipTimeoutId = null;
+        }
+        const deck = createDeck();
+        game.cardsById = {};
+        for (const card of deck) {
+          game.cardsById[card.id] = card;
+        }
+        game.tableau = [[], [], [], [], [], [], []];
+        game.stock = [];
+        game.waste = [];
+        game.foundation = {
+          hearts: [],
+          diamonds: [],
+          clubs: [],
+          spades: []
+        };
+        game.history = [];
+        game.status = "playing";
+        game.dragPayload = null;
+        game.animatingFlip = false;
+        game.elapsedSeconds = 0;
+
+        let cursor = 0;
+        for (let col = 0; col < 7; col += 1) {
+          for (let n = 0; n <= col; n += 1) {
+            const card = deck[cursor];
+            cursor += 1;
+            if (n === col) {
+              card.faceUp = true;
+            }
+            game.tableau[col].push(card.id);
+          }
+        }
+        for (let i = cursor; i < deck.length; i += 1) {
+          game.stock.push(deck[i].id);
+        }
+
+        renderAll();
+      }
+
+      function clearHint() {
+        if (game.hintTimeoutId) {
+          window.clearTimeout(game.hintTimeoutId);
+          game.hintTimeoutId = null;
+        }
+        game.hint = null;
+        game.transientStatus = "";
+      }
+
+      function setHint(hint) {
+        clearHint();
+        game.hint = hint;
+        game.transientStatus = "提示: " + hint.message;
+        game.hintTimeoutId = window.setTimeout(function () {
+          clearHint();
+          renderAll();
+        }, 2800);
+      }
+
+      function formatCardLabel(cardId) {
+        const card = getCard(cardId);
+        return RANK_TEXT[card.rank] + SUIT_SYMBOL[card.suit];
+      }
+
+      function isEffectiveTableauTransfer(fromIndex, startPos, targetIndex) {
+        const pile = game.tableau[fromIndex];
+        if (startPos <= 0) {
+          if (game.tableau[targetIndex].length === 0) {
+            return false;
+          }
+        } else {
+          const previousCard = getCard(pile[startPos - 1]);
+          if (!previousCard.faceUp) {
+            return true;
+          }
+        }
+
+        const moving = pile.slice(startPos);
+        const tableauState = game.tableau.map(function (currentPile) {
+          return currentPile.slice();
+        });
+        tableauState[fromIndex] = pile.slice(0, startPos);
+        tableauState[targetIndex].push(...moving);
+
+        const newSourceTop = topCardId(tableauState[fromIndex]);
+        if (
+          newSourceTop &&
+          getCard(newSourceTop).faceUp &&
+          canMoveCardToFoundation(newSourceTop) &&
+          isSafeFoundationMove(newSourceTop)
+        ) {
+          return true;
+        }
+
+        const wasteTop = topCardId(game.waste);
+        if (wasteTop) {
+          if (canMoveCardToFoundation(wasteTop) && isSafeFoundationMove(wasteTop)) {
+            return true;
+          }
+          for (let i = 0; i < tableauState.length; i += 1) {
+            if (canPlaceOnTableauInState(wasteTop, i, tableauState)) {
+              return true;
+            }
+          }
+        }
+
+        for (let i = 0; i < tableauState.length; i += 1) {
+          const top = topCardId(tableauState[i]);
+          if (top && getCard(top).faceUp && canMoveCardToFoundation(top) && isSafeFoundationMove(top)) {
+            return true;
+          }
+        }
+
+        if (tableauState[fromIndex].length === 0) {
+          if (wasteTop && canPlaceOnTableauInState(wasteTop, fromIndex, tableauState)) {
+            return true;
+          }
+          for (let i = 0; i < tableauState.length; i += 1) {
+            if (i === targetIndex) {
+              continue;
+            }
+            const top = topCardId(tableauState[i]);
+            if (top && getCard(top).faceUp && canPlaceOnTableauInState(top, fromIndex, tableauState)) {
+              return true;
+            }
+          }
+        }
+
+        return false;
+      }
+
+      function buildImmediateWasteHint(cardId) {
+        if (!cardId) {
+          return null;
+        }
+        if (canMoveCardToFoundation(cardId) && isSafeFoundationMove(cardId)) {
+          return {
+            sourceCardId: cardId,
+            sourcePile: { type: "waste" },
+            targetPile: { type: "foundation", suit: getCard(cardId).suit },
+            message: "将 " + formatCardLabel(cardId) + " 移到收牌区"
+          };
+        }
+
+        for (let i = 0; i < game.tableau.length; i += 1) {
+          if (canPlaceOnTableau(cardId, i)) {
+            return {
+              sourceCardId: cardId,
+              sourcePile: { type: "waste" },
+              targetPile: { type: "tableau", index: i },
+              message: "将 " + formatCardLabel(cardId) + " 移到第 " + (i + 1) + " 列"
+            };
+          }
+        }
+
+        return null;
+      }
+
+      function findFutureDrawHint() {
+        let stock = game.stock.slice();
+        let waste = game.waste.slice();
+        let clicks = 0;
+        const seen = new Set();
+
+        while (true) {
+          const stateKey = stock.join(",") + "|" + waste.join(",");
+          if (seen.has(stateKey)) {
+            return null;
+          }
+          seen.add(stateKey);
+
+          if (stock.length > 0) {
+            clicks += 1;
+            const drawCount = Math.min(SETTINGS.drawCount, stock.length);
+            for (let i = 0; i < drawCount; i += 1) {
+              waste.push(stock.pop());
+            }
+
+            const futureHint = buildImmediateWasteHint(topCardId(waste));
+            if (futureHint) {
+              return {
+                sourceCardId: null,
+                sourcePile: { type: "stock" },
+                targetPile: futureHint.targetPile,
+                message:
+                  "点击牌堆 " + clicks + " 次后，可将 " +
+                  formatCardLabel(topCardId(waste)) +
+                  (futureHint.targetPile.type === "foundation"
+                    ? " 移到收牌区"
+                    : " 移到第 " + (futureHint.targetPile.index + 1) + " 列")
+              };
+            }
+            continue;
+          }
+
+          if (waste.length > 0) {
+            clicks += 1;
+            stock = waste.slice().reverse();
+            waste = [];
+            continue;
+          }
+
+          return null;
+        }
+      }
+
+      function findHintMove() {
+        const wasteTop = topCardId(game.waste);
+        const immediateWasteHint = buildImmediateWasteHint(wasteTop);
+        if (immediateWasteHint) {
+          return immediateWasteHint;
+        }
+
+        for (let i = 0; i < game.tableau.length; i += 1) {
+          const top = topCardId(game.tableau[i]);
+          if (top && getCard(top).faceUp && canMoveCardToFoundation(top) && isSafeFoundationMove(top)) {
+            return {
+              sourceCardId: top,
+              sourcePile: { type: "tableau", index: i },
+              targetPile: { type: "foundation", suit: getCard(top).suit },
+              message: "将 " + formatCardLabel(top) + " 移到收牌区"
+            };
+          }
+        }
+
+        if (wasteTop) {
+          for (let i = 0; i < game.tableau.length; i += 1) {
+            if (canPlaceOnTableau(wasteTop, i)) {
+              return {
+                sourceCardId: wasteTop,
+                sourcePile: { type: "waste" },
+                targetPile: { type: "tableau", index: i },
+                message: "将 " + formatCardLabel(wasteTop) + " 移到第 " + (i + 1) + " 列"
+              };
+            }
+          }
+        }
+
+        for (let from = 0; from < game.tableau.length; from += 1) {
+          const pile = game.tableau[from];
+          for (let start = 0; start < pile.length; start += 1) {
+            const moving = canStartDragFromTableau(from, start);
+            if (!moving) {
+              continue;
+            }
+            for (let to = 0; to < game.tableau.length; to += 1) {
+              if (from === to) {
+                continue;
+              }
+              if (canPlaceOnTableau(moving[0], to) && isEffectiveTableauTransfer(from, start, to)) {
+                return {
+                  sourceCardId: moving[0],
+                  sourcePile: { type: "tableau", index: from },
+                  targetPile: { type: "tableau", index: to },
+                  message: "将 " + formatCardLabel(moving[0]) + " 开始的牌组移到第 " + (to + 1) + " 列"
+                };
+              }
+            }
+          }
+        }
+
+        const futureDrawHint = findFutureDrawHint();
+        if (futureDrawHint) {
+          return futureDrawHint;
+        }
+
+        return null;
+      }
+
+      function showHint() {
+        if (isInputLocked()) {
+          return;
+        }
+        const hint = findHintMove();
+        if (!hint) {
+          clearHint();
+          game.transientStatus = "提示: 死局，当前无法继续进行了";
+          game.hintTimeoutId = window.setTimeout(function () {
+            clearHint();
+            renderAll();
+          }, 2200);
+          renderAll();
+          return;
+        }
+        setHint(hint);
+        renderAll();
+      }
+
+      function isHintPile(pileType, key) {
+        if (!game.hint) {
+          return false;
+        }
+        const source = game.hint.sourcePile;
+        const target = game.hint.targetPile;
+        const matches = function (pile) {
+          if (!pile || pile.type !== pileType) {
+            return false;
+          }
+          if (pileType === "tableau") {
+            return pile.index === key;
+          }
+          if (pileType === "foundation") {
+            return pile.suit === key;
+          }
+          return true;
+        };
+        return matches(source) || matches(target);
+      }
+
+      function getSoundManifest() {
+        return {
+          draw: { src: "./assets/sounds/mac/move.wav", volume: 0.26 },
+          recycle: { src: "./assets/sounds/mac/move.wav", volume: 0.26 },
+          move: { src: "./assets/sounds/mac/move.wav", volume: 0.26 },
+          foundation: { src: "./assets/sounds/mac/move.wav", volume: 0.26 },
+          flip: { src: "./assets/sounds/mac/flip.wav", volume: 0.2 },
+          undo: { src: "./assets/sounds/mac/undo.wav", volume: 0.28 },
+          win: { src: "./assets/sounds/mac/win.wav", volume: 0.4 }
+        };
+      }
+
+      function primeAudioAssets() {
+        const manifest = getSoundManifest();
+        for (const key in manifest) {
+          if (game.audioAssets[key]) {
+            continue;
+          }
+          const audio = new Audio(manifest[key].src);
+          audio.preload = "auto";
+          audio.volume = manifest[key].volume;
+          game.audioAssets[key] = audio;
+        }
+      }
+
+      function playSound(effect) {
+        if (!SETTINGS.soundEnabled) {
+          return;
+        }
+        if (!game.audioAssets[effect]) {
+          primeAudioAssets();
+        }
+        const base = game.audioAssets[effect];
+        if (!base) {
+          return;
+        }
+        const audio = base.cloneNode();
+        audio.volume = base.volume;
+        audio.currentTime = 0;
+        audio.play().catch(function () {});
+      }
+
+      function isInputLocked() {
+        return game.status !== "playing" || game.animatingFlip;
+      }
+
+      function topCardId(pile) {
+        return pile.length ? pile[pile.length - 1] : null;
+      }
+
+      function getCard(cardId) {
+        return game.cardsById[cardId];
+      }
+
+      function canMoveCardToFoundation(cardId) {
+        const card = getCard(cardId);
+        const foundationPile = game.foundation[card.suit];
+        if (foundationPile.length === 0) {
+          return card.rank === 1;
+        }
+        const top = getCard(foundationPile[foundationPile.length - 1]);
+        return top.rank + 1 === card.rank;
+      }
+
+      function canPlaceOnTableau(movingCardId, tableauIndex) {
+        const moving = getCard(movingCardId);
+        const targetPile = game.tableau[tableauIndex];
+        if (targetPile.length === 0) {
+          return moving.rank === 13;
+        }
+        const targetTop = getCard(targetPile[targetPile.length - 1]);
+        if (!targetTop.faceUp) {
+          return false;
+        }
+        return moving.color !== targetTop.color && moving.rank + 1 === targetTop.rank;
+      }
+
+      function canPlaceOnTableauInState(movingCardId, tableauIndex, tableauState) {
+        const moving = getCard(movingCardId);
+        const targetPile = tableauState[tableauIndex];
+        if (targetPile.length === 0) {
+          return moving.rank === 13;
+        }
+        const targetTop = getCard(targetPile[targetPile.length - 1]);
+        if (!targetTop.faceUp) {
+          return false;
+        }
+        return moving.color !== targetTop.color && moving.rank + 1 === targetTop.rank;
+      }
+
+      function isValidTableauRun(cardIds) {
+        if (!cardIds.length) {
+          return false;
+        }
+        for (let i = 0; i < cardIds.length - 1; i += 1) {
+          const a = getCard(cardIds[i]);
+          const b = getCard(cardIds[i + 1]);
+          if (!a.faceUp || !b.faceUp) {
+            return false;
+          }
+          if (a.color === b.color) {
+            return false;
+          }
+          if (a.rank !== b.rank + 1) {
+            return false;
+          }
+        }
+        return getCard(cardIds[0]).faceUp;
+      }
+
+      function maybeFlipTopTableauCard(tableauIndex) {
+        const pile = game.tableau[tableauIndex];
+        if (!pile.length) {
+          return false;
+        }
+        const top = getCard(pile[pile.length - 1]);
+        if (!top.faceUp) {
+          top.faceUp = true;
+          return true;
+        }
+        return false;
+      }
+
+      function scheduleSlowFlipTopTableauCard(tableauIndex) {
+        const pile = game.tableau[tableauIndex];
+        if (!pile.length) {
+          return false;
+        }
+        const topId = pile[pile.length - 1];
+        const top = getCard(topId);
+        if (top.faceUp) {
+          return false;
+        }
+        if (game.flipTimeoutId) {
+          window.clearTimeout(game.flipTimeoutId);
+          game.flipTimeoutId = null;
+        }
+        game.animatingFlip = true;
+        game.flipTimeoutId = window.setTimeout(function () {
+          const targetPile = game.tableau[tableauIndex];
+          if (targetPile.length) {
+            const currentTop = getCard(targetPile[targetPile.length - 1]);
+            if (currentTop && !currentTop.faceUp) {
+              currentTop.faceUp = true;
+              currentTop.lastFlipAt = Date.now();
+              playSound("flip");
+            }
+          }
+          game.animatingFlip = false;
+          game.flipTimeoutId = null;
+          renderAll();
+        }, FLIP_REVEAL_DELAY_MS);
+        return true;
+      }
+
+      function setWinIfComplete() {
+        const complete = SUITS.every((s) => game.foundation[s].length === 13);
+        if (complete && game.status !== "won") {
+          game.status = "won";
+          playSound("win");
+        }
+      }
+
+      function drawFromStock() {
+        if (isInputLocked()) {
+          return;
+        }
+        clearHint();
+        if (game.stock.length > 0) {
+          pushHistory();
+          const drawCount = Math.min(SETTINGS.drawCount, game.stock.length);
+          for (let i = 0; i < drawCount; i += 1) {
+            const cardId = game.stock.pop();
+            const card = getCard(cardId);
+            card.faceUp = true;
+            game.waste.push(cardId);
+          }
+          playSound("draw");
+          renderAll();
+          return;
+        }
+
+        if (game.waste.length > 0) {
+          pushHistory();
+          const reversed = game.waste.slice().reverse();
+          for (const cardId of reversed) {
+            getCard(cardId).faceUp = false;
+          }
+          game.stock = reversed;
+          game.waste = [];
+          playSound("recycle");
+          renderAll();
+        }
+      }
+
+      function moveWasteTopToFoundation() {
+        const cardId = topCardId(game.waste);
+        if (!cardId || !canMoveCardToFoundation(cardId)) {
+          return false;
+        }
+        clearHint();
+        pushHistory();
+        game.waste.pop();
+        game.foundation[getCard(cardId).suit].push(cardId);
+        playSound("foundation");
+        setWinIfComplete();
+        renderAll();
+        return true;
+      }
+
+      function moveTableauTopToFoundation(tableauIndex) {
+        const pile = game.tableau[tableauIndex];
+        const cardId = topCardId(pile);
+        if (!cardId || !getCard(cardId).faceUp || !canMoveCardToFoundation(cardId)) {
+          return false;
+        }
+        clearHint();
+        pushHistory();
+        pile.pop();
+        game.foundation[getCard(cardId).suit].push(cardId);
+        playSound("foundation");
+        scheduleSlowFlipTopTableauCard(tableauIndex);
+        setWinIfComplete();
+        renderAll();
+        return true;
+      }
+
+      function tryQuickMoveToFoundation(source) {
+        if (isInputLocked()) {
+          return false;
+        }
+        if (source.type === "waste") {
+          return moveWasteTopToFoundation();
+        }
+        if (source.type === "tableau") {
+          return moveTableauTopToFoundation(source.index);
+        }
+        return false;
+      }
+
+      function removeCardsFromSource(source, cardIds) {
+        if (source.type === "waste") {
+          const top = topCardId(game.waste);
+          if (cardIds.length !== 1 || top !== cardIds[0]) {
+            return false;
+          }
+          game.waste.pop();
+          return true;
+        }
+        if (source.type === "tableau") {
+          const pile = game.tableau[source.index];
+          if (cardIds.length > pile.length) {
+            return false;
+          }
+          const tail = pile.slice(pile.length - cardIds.length);
+          for (let i = 0; i < tail.length; i += 1) {
+            if (tail[i] !== cardIds[i]) {
+              return false;
+            }
+          }
+          pile.length -= cardIds.length;
+          return true;
+        }
+        if (source.type === "foundation") {
+          const pile = game.foundation[source.suit];
+          const top = topCardId(pile);
+          if (cardIds.length !== 1 || top !== cardIds[0]) {
+            return false;
+          }
+          pile.pop();
+          return true;
+        }
+        return false;
+      }
+
+      function applyDragMove(payload, target) {
+        if (isInputLocked() || !payload || !payload.cardIds.length) {
+          return false;
+        }
+        clearHint();
+        const movingIds = payload.cardIds.slice();
+        const movingTop = movingIds[0];
+
+        if (target.type === "foundation") {
+          if (movingIds.length !== 1) {
+            return false;
+          }
+          const card = getCard(movingTop);
+          if (card.suit !== target.suit || !canMoveCardToFoundation(movingTop)) {
+            return false;
+          }
+          pushHistory();
+          if (!removeCardsFromSource(payload.source, movingIds)) {
+            game.history.pop();
+            return false;
+          }
+          game.foundation[target.suit].push(movingTop);
+          playSound("foundation");
+          if (payload.source.type === "tableau") {
+            scheduleSlowFlipTopTableauCard(payload.source.index);
+          }
+          setWinIfComplete();
+          renderAll();
+          return true;
+        }
+
+        if (target.type === "tableau") {
+          if (!isValidTableauRun(movingIds)) {
+            return false;
+          }
+          if (!canPlaceOnTableau(movingTop, target.index)) {
+            return false;
+          }
+          if (payload.source.type === "tableau" && payload.source.index === target.index) {
+            return false;
+          }
+          pushHistory();
+          if (!removeCardsFromSource(payload.source, movingIds)) {
+            game.history.pop();
+            return false;
+          }
+          game.tableau[target.index].push(...movingIds);
+          playSound("move");
+          if (payload.source.type === "tableau") {
+            scheduleSlowFlipTopTableauCard(payload.source.index);
+          }
+          renderAll();
+          return true;
+        }
+
+        return false;
+      }
+
+      function canStartDragFromTableau(tableauIndex, startPos) {
+        const pile = game.tableau[tableauIndex];
+        if (startPos < 0 || startPos >= pile.length) {
+          return null;
+        }
+        const moving = pile.slice(startPos);
+        if (!moving.length) {
+          return null;
+        }
+        if (!getCard(moving[0]).faceUp) {
+          return null;
+        }
+        if (!isValidTableauRun(moving)) {
+          return null;
+        }
+        return moving;
+      }
+
+      function canStartDragFromWaste(cardId) {
+        return topCardId(game.waste) === cardId ? [cardId] : null;
+      }
+
+      function canStartDragFromFoundation(suit, cardId) {
+        return topCardId(game.foundation[suit]) === cardId ? [cardId] : null;
+      }
+
+      function foundationTopRank(suit) {
+        const pile = game.foundation[suit];
+        if (!pile.length) {
+          return 0;
+        }
+        return getCard(pile[pile.length - 1]).rank;
+      }
+
+      function isSafeFoundationMove(cardId) {
+        const card = getCard(cardId);
+        if (card.rank <= 2) {
+          return true;
+        }
+        let opposingSuits;
+        if (card.color === "red") {
+          opposingSuits = ["clubs", "spades"];
+        } else {
+          opposingSuits = ["hearts", "diamonds"];
+        }
+        const minOpposing = Math.min(
+          foundationTopRank(opposingSuits[0]),
+          foundationTopRank(opposingSuits[1])
+        );
+        return minOpposing >= card.rank - 1;
+      }
+
+      function isMechanicalEndgame() {
+        if (game.stock.length > 0 || game.waste.length > 0) {
+          return false;
+        }
+        for (const pile of game.tableau) {
+          for (const cardId of pile) {
+            if (!getCard(cardId).faceUp) {
+              return false;
+            }
+          }
+        }
+        return true;
+      }
+
+      function collectAutoCandidates() {
+        const candidates = [];
+        const wasteTop = topCardId(game.waste);
+        if (wasteTop && canMoveCardToFoundation(wasteTop)) {
+          candidates.push({ source: { type: "waste" }, cardId: wasteTop });
+        }
+        for (let i = 0; i < game.tableau.length; i += 1) {
+          const pile = game.tableau[i];
+          const top = topCardId(pile);
+          if (top && getCard(top).faceUp && canMoveCardToFoundation(top)) {
+            candidates.push({ source: { type: "tableau", index: i }, cardId: top });
+          }
+        }
+        return candidates;
+      }
+
+      function autoCollectToFoundation() {
+        if (isInputLocked()) {
+          return;
+        }
+        clearHint();
+        const mechanical = isMechanicalEndgame();
+        let movedAny = false;
+
+        while (true) {
+          const candidates = collectAutoCandidates();
+          let moved = false;
+          for (const c of candidates) {
+            if (!mechanical && !isSafeFoundationMove(c.cardId)) {
+              continue;
+            }
+            pushHistory();
+            if (c.source.type === "waste") {
+              game.waste.pop();
+            } else {
+              game.tableau[c.source.index].pop();
+              maybeFlipTopTableauCard(c.source.index);
+            }
+            const suit = getCard(c.cardId).suit;
+            game.foundation[suit].push(c.cardId);
+            playSound("foundation");
+            moved = true;
+            movedAny = true;
+            setWinIfComplete();
+            if (game.status === "won") {
+              break;
+            }
+          }
+          if (!moved || game.status === "won") {
+            break;
+          }
+        }
+
+        if (movedAny) {
+          renderAll();
+        } else {
+          els.status.textContent = "自动收牌：当前没有可安全移动的牌";
+        }
+      }
+
+      function undo() {
+        if (game.animatingFlip || !game.history.length) {
+          return;
+        }
+        clearHint();
+        const snapshot = game.history.pop();
+        restoreFromSnapshot(snapshot);
+        playSound("undo");
+        renderAll();
+      }
+
+      function handleCardClick(ev) {
+        const cardEl = ev.target.closest(".card");
+        if (!cardEl) {
+          return;
+        }
+        const cardId = cardEl.dataset.cardId;
+        const sourceType = cardEl.dataset.sourceType;
+        const sourceIndex = cardEl.dataset.sourceIndex;
+        const cardPos = Number(cardEl.dataset.cardPos);
+
+        if (isInputLocked()) {
+          return;
+        }
+
+        if (sourceType === "tableau") {
+          const pile = game.tableau[Number(sourceIndex)];
+          const topId = topCardId(pile);
+          const card = getCard(cardId);
+          if (!card.faceUp && topId === cardId) {
+            clearHint();
+            pushHistory();
+            card.faceUp = true;
+            playSound("flip");
+            renderAll();
+            return;
+          }
+          if (card.faceUp && topId === cardId) {
+            tryQuickMoveToFoundation({ type: "tableau", index: Number(sourceIndex) });
+          }
+          return;
+        }
+
+        if (sourceType === "waste") {
+          if (topCardId(game.waste) === cardId) {
+            tryQuickMoveToFoundation({ type: "waste" });
+          }
+          return;
+        }
+
+        if (sourceType === "foundation" && Number(cardPos) === game.foundation[sourceIndex].length - 1) {
+          return;
+        }
+      }
+
+      function handleCardDoubleClick(ev) {
+        const cardEl = ev.target.closest(".card");
+        if (!cardEl || isInputLocked()) {
+          return;
+        }
+        const sourceType = cardEl.dataset.sourceType;
+        const sourceIndex = cardEl.dataset.sourceIndex;
+        if (sourceType === "waste") {
+          tryQuickMoveToFoundation({ type: "waste" });
+        }
+        if (sourceType === "tableau") {
+          tryQuickMoveToFoundation({ type: "tableau", index: Number(sourceIndex) });
+        }
+      }
+
+      function onDragStart(ev) {
+        const cardEl = ev.target.closest(".card");
+        if (!cardEl || isInputLocked()) {
+          ev.preventDefault();
+          return;
+        }
+        const cardId = cardEl.dataset.cardId;
+        const sourceType = cardEl.dataset.sourceType;
+        const sourceIndex = Number(cardEl.dataset.sourceIndex);
+        const cardPos = Number(cardEl.dataset.cardPos);
+        let movingIds = null;
+        let source = null;
+
+        if (sourceType === "waste") {
+          movingIds = canStartDragFromWaste(cardId);
+          source = { type: "waste" };
+        } else if (sourceType === "tableau") {
+          movingIds = canStartDragFromTableau(sourceIndex, cardPos);
+          source = { type: "tableau", index: sourceIndex };
+        } else if (sourceType === "foundation") {
+          movingIds = canStartDragFromFoundation(cardEl.dataset.sourceIndex, cardId);
+          source = { type: "foundation", suit: cardEl.dataset.sourceIndex };
+        }
+
+        if (!movingIds || !source) {
+          ev.preventDefault();
+          return;
+        }
+
+        game.dragPayload = {
+          source,
+          cardIds: movingIds
+        };
+        ev.dataTransfer.effectAllowed = "move";
+        ev.dataTransfer.setData("text/plain", JSON.stringify(game.dragPayload));
+      }
+
+      function onDragEnd() {
+        game.dragPayload = null;
+      }
+
+      function onDragOverPile(ev) {
+        if (isInputLocked()) {
+          return;
+        }
+        ev.preventDefault();
+        ev.currentTarget.classList.add("drop-target");
+      }
+
+      function onDragLeavePile(ev) {
+        ev.currentTarget.classList.remove("drop-target");
+      }
+
+      function parsePayloadFromDrop(ev) {
+        if (game.dragPayload) {
+          return game.dragPayload;
+        }
+        try {
+          const raw = ev.dataTransfer.getData("text/plain");
+          return JSON.parse(raw);
+        } catch (err) {
+          return null;
+        }
+      }
+
+      function onDropToTableau(ev) {
+        ev.preventDefault();
+        ev.currentTarget.classList.remove("drop-target");
+        const payload = parsePayloadFromDrop(ev);
+        const index = Number(ev.currentTarget.dataset.tableauIndex);
+        applyDragMove(payload, { type: "tableau", index });
+      }
+
+      function onDropToFoundation(ev) {
+        ev.preventDefault();
+        ev.currentTarget.classList.remove("drop-target");
+        const payload = parsePayloadFromDrop(ev);
+        const suit = ev.currentTarget.dataset.suit;
+        applyDragMove(payload, { type: "foundation", suit });
+      }
+
+      function createCardEl(cardId, sourceType, sourceIndex, cardPos, topOffset) {
+        const card = getCard(cardId);
+        const cardEl = document.createElement("div");
+        cardEl.className = "card";
+        cardEl.dataset.cardId = cardId;
+        cardEl.dataset.sourceType = sourceType;
+        cardEl.dataset.sourceIndex = sourceIndex;
+        cardEl.dataset.cardPos = String(cardPos);
+        cardEl.style.top = topOffset + "px";
+
+        if (!card.faceUp) {
+          cardEl.classList.add("face-down");
+          cardEl.textContent = "♠";
+          cardEl.draggable = false;
+          return cardEl;
+        }
+
+        cardEl.classList.add("real-face");
+        const playingCard = document.createElement("playing-card");
+        playingCard.setAttribute("cid", toCardAssetId(card));
+        cardEl.appendChild(playingCard);
+
+        if (card.lastFlipAt && Date.now() - card.lastFlipAt <= FLIP_ANIM_ACTIVE_MS) {
+          cardEl.classList.add("reveal-slow");
+        }
+        if (game.hint && game.hint.sourceCardId === cardId) {
+          cardEl.classList.add("hint-card");
+        }
+
+        let draggable = false;
+        if (game.status === "playing") {
+          if (sourceType === "waste") {
+            draggable = topCardId(game.waste) === cardId;
+          } else if (sourceType === "tableau") {
+            const moving = canStartDragFromTableau(Number(sourceIndex), cardPos);
+            draggable = Boolean(moving);
+          } else if (sourceType === "foundation") {
+            draggable = topCardId(game.foundation[sourceIndex]) === cardId;
+          } else {
+            draggable = false;
+          }
+        }
+        cardEl.draggable = draggable;
+        return cardEl;
+      }
+
+      function toCardAssetId(card) {
+        const rankMap = {
+          1: "A",
+          2: "2",
+          3: "3",
+          4: "4",
+          5: "5",
+          6: "6",
+          7: "7",
+          8: "8",
+          9: "9",
+          10: "10",
+          11: "J",
+          12: "Q",
+          13: "K"
+        };
+        const suitMap = {
+          spades: "S",
+          hearts: "H",
+          diamonds: "D",
+          clubs: "C"
+        };
+        return rankMap[card.rank] + suitMap[card.suit];
+      }
+
+      function renderStock() {
+        els.stock.innerHTML = "";
+        els.stock.classList.toggle("hint-pile", isHintPile("stock", 0));
+        if (game.stock.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "stock-empty";
+          empty.textContent = "↺";
+          els.stock.appendChild(empty);
+          return;
+        }
+        const topId = topCardId(game.stock);
+        const cardEl = createCardEl(topId, "stock", 0, 0, 0);
+        cardEl.classList.add("face-down");
+        cardEl.textContent = "♠";
+        cardEl.draggable = false;
+        els.stock.appendChild(cardEl);
+      }
+
+      function renderWaste() {
+        els.waste.innerHTML = "";
+        els.waste.classList.toggle("hint-pile", isHintPile("waste", 0));
+        if (game.waste.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "waste-empty";
+          empty.textContent = "废牌";
+          els.waste.appendChild(empty);
+          return;
+        }
+        const visibleCount = Math.min(game.waste.length, SETTINGS.drawCount);
+        const start = game.waste.length - visibleCount;
+        for (let i = start; i < game.waste.length; i += 1) {
+          const cardId = game.waste[i];
+          const offset = (i - start) * 16;
+          const cardEl = createCardEl(cardId, "waste", 0, i, 0);
+          cardEl.style.left = offset + "px";
+          els.waste.appendChild(cardEl);
+        }
+      }
+
+      function renderFoundation() {
+        for (const suit of SUITS) {
+          const pileEl = els.foundations[suit];
+          pileEl.innerHTML = "";
+          pileEl.classList.toggle("hint-pile", isHintPile("foundation", suit));
+          const pile = game.foundation[suit];
+          if (!pile.length) {
+            const empty = document.createElement("div");
+            empty.className = "foundation-empty";
+            empty.textContent = SUIT_PLACEHOLDER[suit];
+            pileEl.appendChild(empty);
+            continue;
+          }
+          const topId = topCardId(pile);
+          const cardEl = createCardEl(topId, "foundation", suit, pile.length - 1, 0);
+          pileEl.appendChild(cardEl);
+        }
+      }
+
+      function ensureTableauPiles() {
+        if (els.tableauRow.children.length === 7) {
+          return;
+        }
+        els.tableauRow.innerHTML = "";
+        for (let i = 0; i < 7; i += 1) {
+          const pileEl = document.createElement("div");
+          pileEl.className = "pile tableau-pile";
+          pileEl.dataset.pileType = "tableau";
+          pileEl.dataset.tableauIndex = String(i);
+          els.tableauRow.appendChild(pileEl);
+        }
+      }
+
+      function renderTableau() {
+        ensureTableauPiles();
+        for (let i = 0; i < 7; i += 1) {
+          const pileEl = els.tableauRow.children[i];
+          pileEl.innerHTML = "";
+          pileEl.classList.toggle("hint-pile", isHintPile("tableau", i));
+          const pile = game.tableau[i];
+          if (!pile.length) {
+            const empty = document.createElement("div");
+            empty.className = "tableau-empty";
+            empty.textContent = "K";
+            pileEl.appendChild(empty);
+            continue;
+          }
+          for (let pos = 0; pos < pile.length; pos += 1) {
+            const cardId = pile[pos];
+            const card = getCard(cardId);
+            const topOffset = card.faceUp ? pos * 28 : pos * 18;
+            const cardEl = createCardEl(cardId, "tableau", i, pos, topOffset);
+            pileEl.appendChild(cardEl);
+          }
+        }
+      }
+
+      function updateStatus() {
+        els.timer.textContent = formatSeconds(game.elapsedSeconds);
+        if (game.status === "won") {
+          els.status.textContent = "胜利";
+          els.winBanner.hidden = false;
+        } else if (game.transientStatus) {
+          els.status.textContent = game.transientStatus;
+          els.winBanner.hidden = true;
+        } else {
+          const foundationCount =
+            game.foundation.hearts.length +
+            game.foundation.diamonds.length +
+            game.foundation.clubs.length +
+            game.foundation.spades.length;
+          els.status.textContent =
+            "抽牌 " + SETTINGS.drawCount + " | 基础堆: " + foundationCount + "/52";
+          els.winBanner.hidden = true;
+        }
+
+        els.btnUndo.disabled = game.history.length === 0;
+      }
+
+      function formatSeconds(seconds) {
+        const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
+        const ss = String(seconds % 60).padStart(2, "0");
+        return mm + ":" + ss;
+      }
+
+      function startTimer() {
+        if (game.timerId) {
+          window.clearInterval(game.timerId);
+        }
+        game.timerId = window.setInterval(function () {
+          if (game.status !== "playing") {
+            return;
+          }
+          game.elapsedSeconds += 1;
+          updateStatus();
+        }, 1000);
+      }
+
+      function renderAll() {
+        renderStock();
+        renderWaste();
+        renderFoundation();
+        renderTableau();
+        updateStatus();
+      }
+
+      function bindControlEvents() {
+        els.btnNew.addEventListener("click", function () {
+          startNewGame();
+        });
+
+        els.btnDrawToggle.addEventListener("click", function () {
+          SETTINGS.drawCount = SETTINGS.drawCount === 1 ? 3 : 1;
+          els.btnDrawToggle.textContent = "抽牌: " + SETTINGS.drawCount;
+          startNewGame();
+        });
+
+        els.btnUndo.addEventListener("click", function () {
+          undo();
+        });
+
+        els.btnAuto.addEventListener("click", function () {
+          autoCollectToFoundation();
+        });
+
+        els.btnHint.addEventListener("click", function () {
+          showHint();
+        });
+
+        els.btnSoundToggle.addEventListener("click", function () {
+          SETTINGS.soundEnabled = !SETTINGS.soundEnabled;
+          els.btnSoundToggle.textContent = "音效: " + (SETTINGS.soundEnabled ? "开" : "关");
+          if (SETTINGS.soundEnabled) {
+            primeAudioAssets();
+            playSound("foundation");
+          }
+        });
+
+        els.stock.addEventListener("click", function () {
+          drawFromStock();
+        });
+      }
+
+      function bindBoardEvents() {
+        document.addEventListener("click", handleCardClick);
+        document.addEventListener("dblclick", handleCardDoubleClick);
+        document.addEventListener("dragstart", onDragStart);
+        document.addEventListener("dragend", onDragEnd);
+
+        for (const suit of SUITS) {
+          const f = els.foundations[suit];
+          f.addEventListener("dragover", onDragOverPile);
+          f.addEventListener("dragleave", onDragLeavePile);
+          f.addEventListener("drop", onDropToFoundation);
+        }
+
+        ensureTableauPiles();
+        for (let i = 0; i < 7; i += 1) {
+          const pileEl = els.tableauRow.children[i];
+          pileEl.addEventListener("dragover", onDragOverPile);
+          pileEl.addEventListener("dragleave", onDragLeavePile);
+          pileEl.addEventListener("drop", onDropToTableau);
+        }
+      }
+
+      function init() {
+        primeAudioAssets();
+        bindControlEvents();
+        bindBoardEvents();
+        startTimer();
+        els.btnDrawToggle.textContent = "抽牌: " + SETTINGS.drawCount;
+        els.btnSoundToggle.textContent = "音效: " + (SETTINGS.soundEnabled ? "开" : "关");
+        startNewGame();
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>

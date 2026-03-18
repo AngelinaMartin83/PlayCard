@@ -1,0 +1,36 @@
+---
+import "../styles/global.css";
+import { localeContent } from "../content/site";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{localeContent.en.home.seo.title}</title>
+    <meta name="description" content={localeContent.en.home.seo.description} />
+  </head>
+  <body>
+    <main class="site-main">
+      <section class="hero-card">
+        <p class="eyebrow">Play Card</p>
+        <h1>Choose a language to enter the site</h1>
+        <p>
+          The Astro shell is now ready for localized card game pages. Pick a language below to
+          open the first site routes.
+        </p>
+        <div class="language-grid">
+          <a class="language-card" href="/zh/">
+            <h2>中文</h2>
+            <p>进入中文版本的纸牌游戏站点骨架。</p>
+          </a>
+          <a class="language-card" href="/en/">
+            <h2>English</h2>
+            <p>Open the English version of the card game site starter.</p>
+          </a>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,52 @@
+---
+import GameEmbed from "../../components/GameEmbed.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { buildAlternates, localeContent, normalizeLocale } from "../../content/site";
+
+export function getStaticPaths() {
+  return [{ params: { locale: "zh" } }, { params: { locale: "en" } }];
+}
+
+const locale = normalizeLocale(Astro.params.locale);
+const content = localeContent[locale].solitaire;
+const canonicalPath = `/${locale}/solitaire`;
+const alternates = buildAlternates((item) => `/${item}/solitaire`);
+---
+
+<BaseLayout
+  locale={locale}
+  title={content.seo.title}
+  description={content.seo.description}
+  canonicalPath={canonicalPath}
+  alternates={alternates}
+>
+  <div id="game">
+    <GameEmbed locale={locale} title={content.embedTitle} label={content.gameLabel} />
+  </div>
+
+  <section class="content-grid" id="notes">
+    <article class="content-card">
+      <h2>{content.features.heading}</h2>
+      <ul>
+        {content.features.body.map((item) => <li>{item}</li>)}
+      </ul>
+    </article>
+
+    <article class="content-card">
+      <h2>{content.howToPlay.heading}</h2>
+      <ul>
+        {content.howToPlay.body.map((item) => <li>{item}</li>)}
+      </ul>
+    </article>
+  </section>
+
+  <section class="faq-list">
+    <h2>{content.faqHeading}</h2>
+    {content.faq.map((item) => (
+      <article>
+        <h3>{item.question}</h3>
+        <p>{item.answer}</p>
+      </article>
+    ))}
+  </section>
+</BaseLayout>

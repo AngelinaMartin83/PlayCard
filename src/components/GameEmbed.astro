@@ -1,0 +1,18 @@
+---
+import type { Locale } from "../content/site";
+
+type Props = {
+  locale: Locale;
+  title: string;
+  label: string;
+};
+
+const { locale, title, label } = Astro.props;
+const iframeSrc = `/games/solitaire/index.html?lang=${locale}`;
+---
+
+<section class="game-shell" aria-label={label}>
+  <div class="game-frame">
+    <iframe src={iframeSrc} title={title} loading="lazy" />
+  </div>
+</section>
