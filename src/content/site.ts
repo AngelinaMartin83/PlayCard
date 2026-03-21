@@ -58,7 +58,7 @@ export const localeLabels: Record<Locale, string> = {
   en: "English"
 };
 
-export const siteName = "Play Card";
+export const siteName = "PlayCard";
 
 export const localeContent: Record<Locale, LocaleContent> = {
   zh: {
@@ -66,60 +66,70 @@ export const localeContent: Record<Locale, LocaleContent> = {
     switchLabel: "语言",
     home: {
       seo: {
-        title: "Play Card | 多语言纸牌游戏站点骨架",
+        title: "PlayCard | 免费在线纸牌游戏",
         description:
-          "基于 Astro 的纸牌网页游戏骨架，包含中英文路由、SEO 页面壳和独立游戏嵌入。"
+          "免费在线游玩经典纸牌游戏，打开网页即可开始，支持中英文切换与移动端浏览。"
       },
       hero: {
-        eyebrow: "Astro 游戏站骨架",
-        title: "把单页纸牌游戏升级成可上线的网站",
+        eyebrow: "在线纸牌游戏",
+        title: "免费在线玩经典纸牌",
         description:
-          "这一版先把站点壳子、多语言路径和 SEO 内容搭起来，同时复用原始游戏逻辑，适合继续扩展更多游戏和落地页。",
-        primaryCta: "进入中文游戏页",
-        secondaryCta: "Open English Version"
+          "打开网页即可开始，无需下载。支持桌面与移动设备，随时来一局经典 Klondike 纸牌。",
+        primaryCta: "立即开始",
+        secondaryCta: "View English Version"
       }
     },
     solitaire: {
       seo: {
-        title: "Klondike 纸牌在线玩 | Play Card",
+        title: "免费在线玩经典 Klondike 纸牌 | PlayCard",
         description:
-          "在线游玩 Klondike 纸牌。第一版 Astro 站点骨架已支持中文路由、SEO 内容区和独立游戏嵌入。"
+          "无需下载，打开即可在线游玩经典 Klondike 纸牌。支持撤销、提示、自动收牌、抽 1 或抽 3，以及中英文切换。"
       },
       hero: {
         eyebrow: "在线纸牌游戏",
         title: "Klondike 纸牌",
         description:
-          "当前版本保留了你的原始游戏逻辑，并把它嵌入到 Astro 页面中。这样既能继续快速迭代玩法，又能开始做多语言和搜索流量。",
+          "在浏览器中直接游玩经典 Klondike 纸牌。界面简洁、节奏流畅，适合随时开始一局。",
         primaryCta: "开始游玩",
         secondaryCta: "查看玩法说明"
       },
       features: {
-        heading: "这一版已经具备的站点能力",
+        heading: "为什么在这里玩",
         body: [
-          "独立的中文和英文路由，可以继续扩展更多语言版本。",
-          "页面正文和 FAQ 直接输出在 HTML 中，更适合被搜索引擎索引。",
-          "游戏作为单独静态模块嵌入，后续可以逐步从 iframe 迁移到更深的组件化集成。"
+          "打开网页就能开始，无需下载，也不需要注册账号。",
+          "支持撤销、提示、自动收牌，以及抽 1 / 抽 3 两种玩法切换。",
+          "同时适配桌面和手机浏览器，适合碎片时间快速来一局。"
         ]
       },
       howToPlay: {
-        heading: "如何继续演进",
+        heading: "Klondike 玩法说明",
         body: [
-          "下一步可以把游戏内文字彻底抽到语言包里，避免中英文版本混杂。",
-          "随后补充攻略页、FAQ 变体页和内链结构，逐步接近 2048.gg 这类内容型游戏站。",
-          "当页面结构稳定后，再接入统计、站点地图和搜索提交。"
+          "目标是将所有纸牌按花色从 A 到 K 依次移动到四个基础堆中。",
+          "桌面列中的牌需要按照红黑交替、点数递减的顺序进行移动和整理。",
+          "当一列被清空后，只能将 K 或以 K 开头的牌组移动到空列。"
         ]
       },
       faqHeading: "常见问题",
       faq: [
         {
-          question: "为什么第一版先保留原始游戏文件？",
+          question: "需要下载或注册吗？",
           answer:
-            "这样能最快完成站点化改造。游戏逻辑先保持稳定，把时间留给多语言、SEO 和信息架构。"
+            "不需要。这个版本可以直接在浏览器中打开游玩，无需安装应用，也不需要注册账号。"
         },
         {
-          question: "后面可以不使用 iframe 吗？",
+          question: "手机上可以玩吗？",
           answer:
-            "可以。等路由、文案和布局稳定以后，可以再把现有脚本拆成真正的 Astro 组件或前端模块。"
+            "可以。页面已经针对移动端做了基础适配，你可以在手机浏览器中直接开始游戏。"
+        },
+        {
+          question: "可以撤销操作吗？",
+          answer:
+            "可以。顶部工具栏提供撤销按钮，适合在走错牌或想重新尝试路线时快速回退。"
+        },
+        {
+          question: "抽 1 和抽 3 有什么区别？",
+          answer:
+            "抽 1 每次从牌堆翻开 1 张牌，节奏更轻松；抽 3 每次翻开 3 张牌，更接近不少经典纸牌规则。你可以按自己的习惯切换。"
         }
       ],
       embedTitle: "Klondike 纸牌游戏",
@@ -131,60 +141,70 @@ export const localeContent: Record<Locale, LocaleContent> = {
     switchLabel: "Language",
     home: {
       seo: {
-        title: "Play Card | Multilingual card game starter",
+        title: "PlayCard | Free Online Solitaire Game",
         description:
-          "An Astro starter for browser card games with localized routes, SEO-ready content, and an embedded game module."
+          "Play classic solitaire online for free. Start instantly in your browser with English and Chinese support."
       },
       hero: {
-        eyebrow: "Astro game site starter",
-        title: "Turn a single-page card game into a launch-ready website",
+        eyebrow: "Online card game",
+        title: "Play classic solitaire online for free",
         description:
-          "This first pass adds the site shell, multilingual routing, and SEO content while preserving the original gameplay code for fast iteration.",
-        primaryCta: "Open the English game page",
+          "No download, no sign-up, just open the page and start a new game. Built for quick sessions on desktop and mobile.",
+        primaryCta: "Play Now",
         secondaryCta: "查看中文版本"
       }
     },
     solitaire: {
       seo: {
-        title: "Play Klondike Solitaire Online | Play Card",
+        title: "Play Klondike Solitaire Online Free | PlayCard",
         description:
-          "Play Klondike Solitaire online. This Astro starter already includes localized routes, crawlable content, and an isolated game embed."
+          "Play classic Klondike Solitaire online for free. No download required, with undo, hints, auto finish, draw 1 or draw 3, and mobile support."
       },
       hero: {
         eyebrow: "Online solitaire",
         title: "Klondike Solitaire",
         description:
-          "The original game logic is still intact, but it now lives inside an Astro page that is ready for localization, SEO, and future landing pages.",
+          "Enjoy a clean, fast version of classic Klondike Solitaire directly in your browser. Start a new game anytime and play at your own pace.",
         primaryCta: "Play now",
-        secondaryCta: "Read the setup notes"
+        secondaryCta: "Read the rules"
       },
       features: {
-        heading: "What this first site shell already gives you",
+        heading: "Why play here",
         body: [
-          "Separate Chinese and English routes, with room to expand into more locales.",
-          "Crawlable body content and FAQs rendered as HTML instead of relying on a game canvas alone.",
-          "The game is embedded as an isolated static module, which keeps launch speed high while the site structure evolves."
+          "Start instantly in your browser with no download and no account required.",
+          "Use undo, hints, auto finish, and switch between draw 1 and draw 3 modes.",
+          "Play comfortably on desktop or mobile whenever you want a quick card game break."
         ]
       },
       howToPlay: {
-        heading: "How to evolve this foundation",
+        heading: "How to play Klondike Solitaire",
         body: [
-          "Move every runtime string into language dictionaries so the game UI matches the page language perfectly.",
-          "Add guide pages, FAQ variations, and internal links to build a content-driven game site similar to 2048.gg.",
-          "Once the structure settles, connect analytics, sitemap submission, and performance tuning."
+          "Build the four foundation piles by suit from Ace through King.",
+          "Move cards in the tableau in descending order while alternating red and black colors.",
+          "Empty columns can only be filled with a King or a sequence that begins with a King."
         ]
       },
       faqHeading: "FAQ",
       faq: [
         {
-          question: "Why keep the original game file in the first version?",
+          question: "Do I need to download anything?",
           answer:
-            "It keeps gameplay stable and lets us spend the first round of effort on the website shell, SEO, and localization structure."
+            "No. The game runs directly in your browser, so you can start playing right away without installing anything."
         },
         {
-          question: "Can the iframe be removed later?",
+          question: "Does it work on mobile?",
           answer:
-            "Yes. Once the content model and routes are stable, the current script can be migrated into a deeper component-based integration."
+            "Yes. The layout is adjusted for smaller screens so you can play on mobile browsers as well as desktop."
+        },
+        {
+          question: "Can I undo moves?",
+          answer:
+            "Yes. Use the Undo button in the toolbar to step back if you want to try a different move."
+        },
+        {
+          question: "What is the difference between draw 1 and draw 3?",
+          answer:
+            "Draw 1 reveals one card from the stock at a time and is usually easier. Draw 3 reveals three cards at a time and feels closer to many traditional solitaire setups."
         }
       ],
       embedTitle: "Klondike Solitaire game",

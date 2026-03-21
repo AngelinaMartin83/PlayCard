@@ -260,16 +260,17 @@
       width: fit-content;
     }
 
-    @media (max-width: 720px) {
+    @media (max-width: 1024px) {
       :root {
-        --card-w: 64px;
-        --card-h: 90px;
-        --tableau-gap: 20px;
-        --board-gap: 10px;
+        --board-gap: clamp(4px, 1.2vw, 10px);
+        --card-w: clamp(42px, calc((100vw - 20px - (var(--board-gap) * 6)) / 7), 92px);
+        --card-h: calc(var(--card-w) * 1.3913);
+        --tableau-gap: clamp(12px, calc(var(--card-h) * 0.22), 22px);
       }
 
       .app {
-        padding: 12px 12px 20px;
+        max-width: none;
+        padding: 12px 10px 20px;
       }
 
       .toolbar {
@@ -290,14 +291,18 @@
       .timer {
         min-width: 60px;
       }
+
+      .tableau-row {
+        width: 100%;
+      }
     }
 
     @media (max-width: 560px) {
       :root {
-        --card-w: 46px;
-        --card-h: 64px;
-        --tableau-gap: 14px;
-        --board-gap: 6px;
+        --board-gap: clamp(4px, 1vw, 6px);
+        --card-w: clamp(40px, calc((100vw - 16px - (var(--board-gap) * 6)) / 7), 64px);
+        --card-h: calc(var(--card-w) * 1.3913);
+        --tableau-gap: clamp(10px, calc(var(--card-h) * 0.2), 14px);
       }
 
       body {
@@ -309,14 +314,25 @@
       }
 
       .toolbar {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
         margin-bottom: 10px;
+        padding-bottom: 2px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+
+      .toolbar::-webkit-scrollbar {
+        display: none;
       }
 
       button {
-        flex: 1 1 calc(50% - 8px);
-        min-width: 0;
-        font-size: 12px;
-        padding: 7px 8px;
+        flex: 0 0 auto;
+        min-width: fit-content;
+        font-size: 11px;
+        padding: 6px 10px;
+        white-space: nowrap;
       }
 
       .status,
@@ -325,7 +341,10 @@
       }
 
       .status-group {
+        flex: 0 0 auto;
+        width: auto;
         gap: 8px;
+        margin-left: 4px;
       }
 
       .top-row {
@@ -350,10 +369,10 @@
 
     @media (max-width: 400px) {
       :root {
-        --card-w: 42px;
-        --card-h: 58px;
-        --tableau-gap: 12px;
         --board-gap: 4px;
+        --card-w: calc((100vw - 16px - (var(--board-gap) * 6)) / 7);
+        --card-h: calc(var(--card-w) * 1.3913);
+        --tableau-gap: 10px;
       }
 
       .app {
@@ -361,8 +380,8 @@
       }
 
       button {
-        font-size: 11px;
-        padding: 6px 7px;
+        font-size: 10px;
+        padding: 6px 8px;
       }
 
       .status,

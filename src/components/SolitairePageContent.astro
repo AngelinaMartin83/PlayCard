@@ -1,0 +1,42 @@
+---
+import type { Locale } from "../content/site";
+import { localeContent } from "../content/site";
+import GameEmbed from "./GameEmbed.astro";
+
+type Props = {
+  locale: Locale;
+};
+
+const { locale } = Astro.props;
+const content = localeContent[locale].solitaire;
+---
+
+<div id="game">
+  <GameEmbed locale={locale} title={content.embedTitle} label={content.gameLabel} />
+</div>
+
+<section class="content-grid" id="notes">
+  <article class="content-card">
+    <h2>{content.features.heading}</h2>
+    <ul>
+      {content.features.body.map((item) => <li>{item}</li>)}
+    </ul>
+  </article>
+
+  <article class="content-card">
+    <h2>{content.howToPlay.heading}</h2>
+    <ul>
+      {content.howToPlay.body.map((item) => <li>{item}</li>)}
+    </ul>
+  </article>
+</section>
+
+<section class="faq-list">
+  <h2>{content.faqHeading}</h2>
+  {content.faq.map((item) => (
+    <article>
+      <h3>{item.question}</h3>
+      <p>{item.answer}</p>
+    </article>
+  ))}
+</section>

@@ -9,9 +9,19 @@ type Props = {
   description: string;
   canonicalPath: string;
   alternates?: AlternateLink[];
+  homeHref?: string;
+  localeHrefs?: Partial<Record<Locale, string>>;
 };
 
-const { locale, title, description, canonicalPath, alternates = [] } = Astro.props;
+const {
+  locale,
+  title,
+  description,
+  canonicalPath,
+  alternates = [],
+  homeHref = `/${locale}/`,
+  localeHrefs = {}
+} = Astro.props;
 const currentLocaleContent = localeContent[locale];
 const site = Astro.site ?? new URL("https://example.com");
 const canonicalUrl = new URL(canonicalPath, site).toString();
@@ -41,14 +51,14 @@ const canonicalUrl = new URL(canonicalPath, site).toString();
   <body>
     <div class="site-shell">
       <header class="site-header">
-        <a class="brand" href={`/${locale}/`}>{siteName}</a>
+        <a class="brand" href={homeHref}>{siteName}</a>
         <nav class="locale-nav" aria-label={currentLocaleContent.switchLabel}>
           {locales.map((item) => (
             <a
               class:list={["locale-link", { active: item === locale }]}
-              href={canonicalPath === `/${locale}/`
+              href={localeHrefs[item] ?? (canonicalPath === `/${locale}/`
                 ? `/${item}/`
-                : canonicalPath.replace(`/${locale}/`, `/${item}/`)}
+                : canonicalPath.replace(`/${locale}/`, `/${item}/`))}
             >
               {localeLabels[item]}
             </a>

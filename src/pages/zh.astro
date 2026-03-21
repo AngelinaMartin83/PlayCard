@@ -3,15 +3,15 @@ import SolitairePageContent from "../components/SolitairePageContent.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { localeContent } from "../content/site";
 
-const locale = "en";
-const content = localeContent.en.solitaire;
+const locale = "zh";
+const content = localeContent.zh.solitaire;
 ---
 
 <BaseLayout
   locale={locale}
   title={content.seo.title}
   description={content.seo.description}
-  canonicalPath="/"
+  canonicalPath="/zh"
   homeHref="/"
   localeHrefs={{ en: "/", zh: "/zh" }}
   alternates={[
