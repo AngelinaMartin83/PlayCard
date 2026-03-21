@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Klondike 纸牌</title>
+  <title>windows 经典纸牌</title>
   <style>
     :root {
       --bg-start: #1f6f43;
@@ -587,6 +587,7 @@
         flipTimeoutId: null,
         timerId: null,
         elapsedSeconds: 0,
+        windowActive: true,
         audioAssets: {},
         hint: null,
         hintTimeoutId: null,
@@ -1779,12 +1780,29 @@
         return mm + ":" + ss;
       }
 
+      function pageHasFocus() {
+        try {
+          if (window.top && window.top.document) {
+            return window.top.document.hasFocus();
+          }
+        } catch (error) {
+          // Fall back to the current document when the top window is not accessible.
+        }
+        return document.hasFocus();
+      }
+
+      function syncTimerActivity() {
+        game.windowActive =
+          document.visibilityState === "visible" &&
+          pageHasFocus();
+      }
+
       function startTimer() {
         if (game.timerId) {
           window.clearInterval(game.timerId);
         }
         game.timerId = window.setInterval(function () {
-          if (game.status !== "playing") {
+          if (game.status !== "playing" || !game.windowActive) {
             return;
           }
           game.elapsedSeconds += 1;
@@ -1859,10 +1877,18 @@
         }
       }
 
+      function bindWindowEvents() {
+        document.addEventListener("visibilitychange", syncTimerActivity);
+        window.addEventListener("focus", syncTimerActivity);
+        window.addEventListener("blur", syncTimerActivity);
+      }
+
       function init() {
         primeAudioAssets();
         bindControlEvents();
         bindBoardEvents();
+        bindWindowEvents();
+        syncTimerActivity();
         startTimer();
         syncUiText();
         startNewGame();

@@ -66,45 +66,45 @@ export const localeContent: Record<Locale, LocaleContent> = {
     switchLabel: "语言",
     home: {
       seo: {
-        title: "PlayCard | 免费在线纸牌游戏",
+        title: "PlayCard | 免费在线玩 windows 经典纸牌",
         description:
-          "免费在线游玩经典纸牌游戏，打开网页即可开始，支持中英文切换与移动端浏览。"
+          "免费在线游玩熟悉的 windows 经典纸牌，也就是经典 Klondike 玩法。打开网页即可开始，支持中英文切换与移动端浏览。"
       },
       hero: {
         eyebrow: "在线纸牌游戏",
-        title: "免费在线玩经典纸牌",
+        title: "免费在线玩 windows 经典纸牌",
         description:
-          "打开网页即可开始，无需下载。支持桌面与移动设备，随时来一局经典 Klondike 纸牌。",
+          "还原很多人熟悉的 windows 经典纸牌手感，打开网页即可开始。无需下载，支持桌面与移动设备，随时来一局经典 Klondike。",
         primaryCta: "立即开始",
         secondaryCta: "View English Version"
       }
     },
     solitaire: {
       seo: {
-        title: "免费在线玩经典 Klondike 纸牌 | PlayCard",
+        title: "免费在线玩 windows 经典纸牌 | PlayCard",
         description:
-          "无需下载，打开即可在线游玩经典 Klondike 纸牌。支持撤销、提示、自动收牌、抽 1 或抽 3，以及中英文切换。"
+          "在线游玩熟悉的 windows 经典纸牌，也就是经典 Klondike 玩法。无需下载，支持撤销、Hint 提示、自动收牌、抽 1 或抽 3。"
       },
       hero: {
         eyebrow: "在线纸牌游戏",
-        title: "Klondike 纸牌",
+        title: "windows 经典纸牌",
         description:
-          "在浏览器中直接游玩经典 Klondike 纸牌。界面简洁、节奏流畅，适合随时开始一局。",
+          "在浏览器中直接游玩熟悉的 windows 经典纸牌。保留经典 Klondike 规则，同时提供更流畅的操作、Hint 提示与自动收牌。",
         primaryCta: "开始游玩",
         secondaryCta: "查看玩法说明"
       },
       features: {
         heading: "为什么在这里玩",
         body: [
-          "打开网页就能开始，无需下载，也不需要注册账号。",
-          "支持撤销、提示、自动收牌，以及抽 1 / 抽 3 两种玩法切换。",
-          "同时适配桌面和手机浏览器，适合碎片时间快速来一局。"
+          "打开网页就能开始，无需下载，也不需要注册账号，随时重温熟悉的 windows 经典纸牌。",
+          "支持撤销、Hint 提示、自动收牌，以及抽 1 / 抽 3 两种玩法切换。",
+          "同时适配桌面和手机浏览器，适合碎片时间快速来一局经典 Klondike。"
         ]
       },
       howToPlay: {
-        heading: "Klondike 玩法说明",
+        heading: "windows 经典纸牌玩法说明",
         body: [
-          "目标是将所有纸牌按花色从 A 到 K 依次移动到四个基础堆中。",
+          "目标是将所有纸牌按花色从 A 到 K 依次移动到四个基础堆中，这也是标准 Klondike Solitaire 的胜利条件。",
           "桌面列中的牌需要按照红黑交替、点数递减的顺序进行移动和整理。",
           "当一列被清空后，只能将 K 或以 K 开头的牌组移动到空列。"
         ]
@@ -127,6 +127,11 @@ export const localeContent: Record<Locale, LocaleContent> = {
             "可以。顶部工具栏提供撤销按钮，适合在走错牌或想重新尝试路线时快速回退。"
         },
         {
+          question: "Hint 提示怎么用？",
+          answer:
+            "点击顶部的 Hint / 提示按钮后，系统会高亮推荐的牌堆，并在状态栏给出下一步建议。如果提示当前没有可走的合法移动，可以先尝试抽牌、撤销，或重新整理牌列。"
+        },
+        {
           question: "抽 1 和抽 3 有什么区别？",
           answer:
             "抽 1 每次从牌堆翻开 1 张牌，节奏更轻松；抽 3 每次翻开 3 张牌，更接近不少经典纸牌规则。你可以按自己的习惯切换。"
@@ -141,15 +146,15 @@ export const localeContent: Record<Locale, LocaleContent> = {
     switchLabel: "Language",
     home: {
       seo: {
-        title: "PlayCard | Free Online Solitaire Game",
+        title: "PlayCard | Klondike Solitaire Online",
         description:
-          "Play classic solitaire online for free. Start instantly in your browser with English and Chinese support."
+          "Play Klondike Solitaire online for free. Start instantly in your browser with English and Chinese support."
       },
       hero: {
         eyebrow: "Online card game",
-        title: "Play classic solitaire online for free",
+        title: "Play Klondike Solitaire online for free",
         description:
-          "No download, no sign-up, just open the page and start a new game. Built for quick sessions on desktop and mobile.",
+          "No download, no sign-up, just open the page and start a new Klondike Solitaire game. Built for quick sessions on desktop and mobile.",
         primaryCta: "Play Now",
         secondaryCta: "查看中文版本"
       }
@@ -158,22 +163,22 @@ export const localeContent: Record<Locale, LocaleContent> = {
       seo: {
         title: "Play Klondike Solitaire Online Free | PlayCard",
         description:
-          "Play classic Klondike Solitaire online for free. No download required, with undo, hints, auto finish, draw 1 or draw 3, and mobile support."
+          "Play Klondike Solitaire online for free with no download required. Enjoy undo, Hint guidance, auto finish, draw 1 or draw 3, and mobile support."
       },
       hero: {
         eyebrow: "Online solitaire",
         title: "Klondike Solitaire",
         description:
-          "Enjoy a clean, fast version of classic Klondike Solitaire directly in your browser. Start a new game anytime and play at your own pace.",
+          "Enjoy a clean, fast version of classic Klondike Solitaire directly in your browser. Start a new game anytime, use Hint when you need guidance, and play at your own pace.",
         primaryCta: "Play now",
         secondaryCta: "Read the rules"
       },
       features: {
         heading: "Why play here",
         body: [
-          "Start instantly in your browser with no download and no account required.",
-          "Use undo, hints, auto finish, and switch between draw 1 and draw 3 modes.",
-          "Play comfortably on desktop or mobile whenever you want a quick card game break."
+          "Start Klondike Solitaire instantly in your browser with no download and no account required.",
+          "Use undo, Hint guidance, auto finish, and switch between draw 1 and draw 3 modes.",
+          "Play comfortably on desktop or mobile whenever you want a quick classic card game break."
         ]
       },
       howToPlay: {
@@ -200,6 +205,11 @@ export const localeContent: Record<Locale, LocaleContent> = {
           question: "Can I undo moves?",
           answer:
             "Yes. Use the Undo button in the toolbar to step back if you want to try a different move."
+        },
+        {
+          question: "How do I use Hint?",
+          answer:
+            "Click the Hint button in the toolbar and the game will highlight the suggested pile while showing the recommended next move in the status area. If the message says there are no legal moves right now, try drawing from the stock, undoing a move, or reorganizing the tableau."
         },
         {
           question: "What is the difference between draw 1 and draw 3?",
