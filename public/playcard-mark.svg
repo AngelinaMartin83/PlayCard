@@ -1,0 +1,23 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="pc-bg" x1="20" y1="14" x2="108" y2="114" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#145F41"/>
+      <stop offset="1" stop-color="#0A3D2C"/>
+    </linearGradient>
+    <linearGradient id="pc-front" x1="38" y1="28" x2="88" y2="92" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#F4E9D2"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="28" fill="url(#pc-bg)"/>
+  <circle cx="100" cy="28" r="10" fill="#D9A33A" fill-opacity="0.18"/>
+  <path d="M92 18L94.8 23.2L100 26L94.8 28.8L92 34L89.2 28.8L84 26L89.2 23.2L92 18Z" fill="#E0B04A"/>
+  <g opacity="0.85">
+    <rect x="28" y="27" width="42" height="56" rx="10" transform="rotate(-11 28 27)" fill="#F8F1E4" stroke="#D9A33A" stroke-width="3"/>
+    <path d="M48 47C52.4 40.8 62 40.8 62 49.1C62 60.5 48 67.2 48 67.2C48 67.2 34 60.5 34 49.1C34 40.8 43.6 40.8 48 47Z" fill="#C75A46"/>
+  </g>
+  <rect x="42" y="30" width="48" height="68" rx="12" fill="url(#pc-front)" stroke="#D9A33A" stroke-width="4"/>
+  <path d="M54 46H63.6L58.8 34L54 46ZM56.3 52L57.7 48H67.7L69.1 52H73.7L64.9 28H60.5L51.7 52H56.3Z" fill="#0D6A45"/>
+  <path d="M66 74C72 65.4 85 65.4 85 76.8C85 92.6 66 101.8 66 101.8C66 101.8 47 92.6 47 76.8C47 65.4 60 65.4 66 74Z" fill="#C75A46"/>
+  <path d="M54 86H78" stroke="#0D6A45" stroke-width="4" stroke-linecap="round" stroke-opacity="0.14"/>
+</svg>

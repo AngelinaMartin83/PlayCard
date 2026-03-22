@@ -34,6 +34,8 @@ const canonicalUrl = new URL(canonicalPath, site).toString();
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <link rel="icon" href="/playcard-mark.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/playcard-mark.svg" />
     <link rel="canonical" href={canonicalUrl} />
     {alternates.map((alternate) => (
       <link
@@ -51,7 +53,10 @@ const canonicalUrl = new URL(canonicalPath, site).toString();
   <body>
     <div class="site-shell">
       <header class="site-header">
-        <a class="brand" href={homeHref}>{siteName}</a>
+        <a class="brand" href={homeHref} aria-label={siteName}>
+          <img class="brand-mark" src="/playcard-mark.svg" alt="" width="44" height="44" />
+          <span class="brand-name">{siteName}</span>
+        </a>
         <nav class="locale-nav" aria-label={currentLocaleContent.switchLabel}>
           {locales.map((item) => (
             <a
