@@ -58,7 +58,8 @@ export const localeLabels: Record<Locale, string> = {
   en: "English"
 };
 
-export const siteName = "PlayCard";
+export const siteName = "Klondike Solitaire";
+export const siteDomain = "klondike-solitaire.xyz";
 
 export const localeContent: Record<Locale, LocaleContent> = {
   zh: {
@@ -66,7 +67,7 @@ export const localeContent: Record<Locale, LocaleContent> = {
     switchLabel: "语言",
     home: {
       seo: {
-        title: "PlayCard | 免费在线玩 windows 经典纸牌",
+        title: "Klondike Solitaire | 免费在线玩 windows 经典纸牌",
         description:
           "免费在线游玩熟悉的 windows 经典纸牌，也就是经典 Klondike 玩法。打开网页即可开始，支持中英文切换与移动端浏览。"
       },
@@ -81,7 +82,7 @@ export const localeContent: Record<Locale, LocaleContent> = {
     },
     solitaire: {
       seo: {
-        title: "免费在线玩 windows 经典纸牌 | PlayCard",
+        title: "免费在线玩 windows 经典纸牌 | Klondike Solitaire",
         description:
           "在线游玩熟悉的 windows 经典纸牌，也就是经典 Klondike 玩法。无需下载，支持撤销、Hint 提示、自动收牌、抽 1 或抽 3。"
       },
@@ -146,7 +147,7 @@ export const localeContent: Record<Locale, LocaleContent> = {
     switchLabel: "Language",
     home: {
       seo: {
-        title: "PlayCard | Klondike Solitaire Online",
+        title: "Klondike Solitaire | Play Klondike Solitaire Online",
         description:
           "Play Klondike Solitaire online for free. Start instantly in your browser with English and Chinese support."
       },
@@ -161,7 +162,7 @@ export const localeContent: Record<Locale, LocaleContent> = {
     },
     solitaire: {
       seo: {
-        title: "Play Klondike Solitaire Online Free | PlayCard",
+        title: "Play Klondike Solitaire Online Free | Klondike Solitaire",
         description:
           "Play Klondike Solitaire online for free with no download required. Enjoy undo, Hint guidance, auto finish, draw 1 or draw 3, and mobile support."
       },
@@ -214,7 +215,7 @@ export const localeContent: Record<Locale, LocaleContent> = {
         {
           question: "What is the difference between draw 1 and draw 3?",
           answer:
-            "Draw 1 reveals one card from the stock at a time and is usually easier. Draw 3 reveals three cards at a time and feels closer to many traditional solitaire setups."
+            "Draw 1 reveals one card from the stock at a time and is usually easier. Draw 3 reveals three cards at a time and gives you a tougher, more traditional klondike solitaire by 3 style experience."
         }
       ],
       embedTitle: "Klondike Solitaire game",

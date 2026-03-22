@@ -1,7 +1,7 @@
 ---
 import "../styles/global.css";
 import type { AlternateLink, Locale } from "../content/site";
-import { localeContent, localeLabels, locales, siteName } from "../content/site";
+import { localeContent, localeLabels, locales, siteDomain, siteName } from "../content/site";
 
 type Props = {
   locale: Locale;
@@ -55,7 +55,10 @@ const canonicalUrl = new URL(canonicalPath, site).toString();
       <header class="site-header">
         <a class="brand" href={homeHref} aria-label={siteName}>
           <img class="brand-mark" src="/playcard-mark.svg" alt="" width="44" height="44" />
-          <span class="brand-name">{siteName}</span>
+          <span class="brand-copy">
+            <span class="brand-name">{siteName}</span>
+            <span class="brand-domain">{siteDomain}</span>
+          </span>
         </a>
         <nav class="locale-nav" aria-label={currentLocaleContent.switchLabel}>
           {locales.map((item) => (
