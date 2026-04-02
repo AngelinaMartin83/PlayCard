@@ -495,6 +495,9 @@
             moveRunToColumn: function (cardLabel, columnNumber) {
               return "Move the run starting with " + cardLabel + " to column " + columnNumber;
             },
+            restoreFoundationCard: function (cardLabel, columnNumber, followUpLabel) {
+              return "Move " + cardLabel + " back to column " + columnNumber + " to open " + followUpLabel;
+            },
             futureStockMove: function (clicks, cardLabel, targetPile) {
               const destination = targetPile.type === "foundation"
                 ? "the foundation"
@@ -536,6 +539,9 @@
             },
             moveRunToColumn: function (cardLabel, columnNumber) {
               return "将 " + cardLabel + " 开始的牌组移到第 " + columnNumber + " 列";
+            },
+            restoreFoundationCard: function (cardLabel, columnNumber, followUpLabel) {
+              return "先把 " + cardLabel + " 移回第 " + columnNumber + " 列，为 " + followUpLabel + " 腾出落点";
             },
             futureStockMove: function (clicks, cardLabel, targetPile) {
               const destination = targetPile.type === "foundation"
@@ -725,6 +731,225 @@
         return RANK_TEXT[card.rank] + SUIT_SYMBOL[card.suit];
       }
 
+      function canMoveCardToFoundationInState(cardId, foundationState) {
+        const card = getCard(cardId);
+        const foundationPile = foundationState[card.suit];
+        if (foundationPile.length === 0) {
+          return card.rank === 1;
+        }
+        const top = getCard(foundationPile[foundationPile.length - 1]);
+        return top.rank + 1 === card.rank;
+      }
+
+      function collectTableauDestinationsInState(cardId, sourcePile, tableauState) {
+        const destinations = [];
+        for (let i = 0; i < tableauState.length; i += 1) {
+          if (sourcePile && sourcePile.type === "tableau" && sourcePile.index === i) {
+            continue;
+          }
+          if (canPlaceOnTableauInState(cardId, i, tableauState)) {
+            destinations.push(i);
+          }
+        }
+        return destinations;
+      }
+
+      function canStartDragFromTableauInState(tableauState, tableauIndex, startPos) {
+        const pile = tableauState[tableauIndex];
+        if (startPos < 0 || startPos >= pile.length) {
+          return null;
+        }
+        const moving = pile.slice(startPos);
+        if (!moving.length) {
+          return null;
+        }
+        if (!getCard(moving[0]).faceUp) {
+          return null;
+        }
+        if (!isValidTableauRun(moving)) {
+          return null;
+        }
+        return moving;
+      }
+
+      function collectMovableCardsInState(tableauState, wasteState) {
+        const cards = [];
+        const wasteTop = topCardId(wasteState);
+        if (wasteTop) {
+          cards.push({
+            cardId: wasteTop,
+            sourcePile: { type: "waste" }
+          });
+        }
+        for (let i = 0; i < tableauState.length; i += 1) {
+          const pile = tableauState[i];
+          for (let start = 0; start < pile.length; start += 1) {
+            const moving = canStartDragFromTableauInState(tableauState, i, start);
+            if (!moving) {
+              continue;
+            }
+            cards.push({
+              cardId: moving[0],
+              sourcePile: { type: "tableau", index: i }
+            });
+          }
+        }
+        return cards;
+      }
+
+      function findCriticalDependentForTableauAnchor(
+        tableauIndex,
+        cardId,
+        tableauState,
+        wasteState,
+        foundationState
+      ) {
+        const anchor = getCard(cardId);
+        if (anchor.rank <= 1 || topCardId(tableauState[tableauIndex]) !== cardId) {
+          return null;
+        }
+
+        const movableCards = collectMovableCardsInState(tableauState, wasteState);
+        for (const candidate of movableCards) {
+          const candidateCard = getCard(candidate.cardId);
+          if (candidateCard.color === anchor.color || candidateCard.rank + 1 !== anchor.rank) {
+            continue;
+          }
+          if (candidate.sourcePile.type === "tableau" && candidate.sourcePile.index === tableauIndex) {
+            continue;
+          }
+          if (canMoveCardToFoundationInState(candidate.cardId, foundationState)) {
+            continue;
+          }
+          const destinations = collectTableauDestinationsInState(
+            candidate.cardId,
+            candidate.sourcePile,
+            tableauState
+          );
+          if (destinations.length === 1 && destinations[0] === tableauIndex) {
+            return candidate;
+          }
+        }
+
+        return null;
+      }
+
+      function canAutoMoveCardToFoundation(source, cardId, options) {
+        if (options && options.mechanical) {
+          return true;
+        }
+        if (!isSafeFoundationMove(cardId)) {
+          return false;
+        }
+        if (source.type === "tableau") {
+          const dependent = findCriticalDependentForTableauAnchor(
+            source.index,
+            cardId,
+            game.tableau,
+            game.waste,
+            game.foundation
+          );
+          if (dependent) {
+            return false;
+          }
+        }
+        return true;
+      }
+
+      function findUnlockedDependentMoveForRestoredAnchor(anchorCardId, targetIndex) {
+        const anchor = getCard(anchorCardId);
+        if (anchor.rank <= 1) {
+          return null;
+        }
+
+        const tableauState = game.tableau.map(function (pile) {
+          return pile.slice();
+        });
+        tableauState[targetIndex].push(anchorCardId);
+
+        const movableCards = collectMovableCardsInState(game.tableau, game.waste);
+        for (const candidate of movableCards) {
+          const candidateCard = getCard(candidate.cardId);
+          if (candidateCard.color === anchor.color || candidateCard.rank + 1 !== anchor.rank) {
+            continue;
+          }
+          if (candidate.sourcePile.type === "tableau" && candidate.sourcePile.index === targetIndex) {
+            continue;
+          }
+          if (canMoveCardToFoundation(candidate.cardId)) {
+            continue;
+          }
+          const currentDestinations = collectTableauDestinationsInState(
+            candidate.cardId,
+            candidate.sourcePile,
+            game.tableau
+          );
+          if (currentDestinations.length > 0) {
+            continue;
+          }
+          if (canPlaceOnTableauInState(candidate.cardId, targetIndex, tableauState)) {
+            return candidate;
+          }
+        }
+
+        return null;
+      }
+
+      function findFoundationRecoveryHint() {
+        for (const suit of SUITS) {
+          const cardId = topCardId(game.foundation[suit]);
+          if (!cardId) {
+            continue;
+          }
+          for (let i = 0; i < game.tableau.length; i += 1) {
+            if (!canPlaceOnTableau(cardId, i)) {
+              continue;
+            }
+            const unlockedMove = findUnlockedDependentMoveForRestoredAnchor(cardId, i);
+            if (!unlockedMove) {
+              continue;
+            }
+            return {
+              sourceCardId: cardId,
+              sourcePile: { type: "foundation", suit: suit },
+              targetPile: { type: "tableau", index: i },
+              message: COPY.restoreFoundationCard(
+                formatCardLabel(cardId),
+                i + 1,
+                formatCardLabel(unlockedMove.cardId)
+              )
+            };
+          }
+        }
+        return null;
+      }
+
+      function findAnyLegalFoundationHint() {
+        const wasteTop = topCardId(game.waste);
+        if (wasteTop && canMoveCardToFoundation(wasteTop)) {
+          return {
+            sourceCardId: wasteTop,
+            sourcePile: { type: "waste" },
+            targetPile: { type: "foundation", suit: getCard(wasteTop).suit },
+            message: COPY.moveToFoundation(formatCardLabel(wasteTop))
+          };
+        }
+
+        for (let i = 0; i < game.tableau.length; i += 1) {
+          const top = topCardId(game.tableau[i]);
+          if (top && getCard(top).faceUp && canMoveCardToFoundation(top)) {
+            return {
+              sourceCardId: top,
+              sourcePile: { type: "tableau", index: i },
+              targetPile: { type: "foundation", suit: getCard(top).suit },
+              message: COPY.moveToFoundation(formatCardLabel(top))
+            };
+          }
+        }
+
+        return null;
+      }
+
       function isEffectiveTableauTransfer(fromIndex, startPos, targetIndex) {
         const pile = game.tableau[fromIndex];
         if (startPos <= 0) {
@@ -871,7 +1096,12 @@
 
         for (let i = 0; i < game.tableau.length; i += 1) {
           const top = topCardId(game.tableau[i]);
-          if (top && getCard(top).faceUp && canMoveCardToFoundation(top) && isSafeFoundationMove(top)) {
+          if (
+            top &&
+            getCard(top).faceUp &&
+            canMoveCardToFoundation(top) &&
+            isSafeFoundationMove(top)
+          ) {
             return {
               sourceCardId: top,
               sourcePile: { type: "tableau", index: i },
@@ -915,6 +1145,16 @@
               }
             }
           }
+        }
+
+        const foundationRecoveryHint = findFoundationRecoveryHint();
+        if (foundationRecoveryHint) {
+          return foundationRecoveryHint;
+        }
+
+        const legalFoundationHint = findAnyLegalFoundationHint();
+        if (legalFoundationHint) {
+          return legalFoundationHint;
         }
 
         const futureDrawHint = findFutureDrawHint();
@@ -1020,13 +1260,7 @@
       }
 
       function canMoveCardToFoundation(cardId) {
-        const card = getCard(cardId);
-        const foundationPile = game.foundation[card.suit];
-        if (foundationPile.length === 0) {
-          return card.rank === 1;
-        }
-        const top = getCard(foundationPile[foundationPile.length - 1]);
-        return top.rank + 1 === card.rank;
+        return canMoveCardToFoundationInState(cardId, game.foundation);
       }
 
       function canPlaceOnTableau(movingCardId, tableauIndex) {
@@ -1299,21 +1533,7 @@
       }
 
       function canStartDragFromTableau(tableauIndex, startPos) {
-        const pile = game.tableau[tableauIndex];
-        if (startPos < 0 || startPos >= pile.length) {
-          return null;
-        }
-        const moving = pile.slice(startPos);
-        if (!moving.length) {
-          return null;
-        }
-        if (!getCard(moving[0]).faceUp) {
-          return null;
-        }
-        if (!isValidTableauRun(moving)) {
-          return null;
-        }
-        return moving;
+        return canStartDragFromTableauInState(game.tableau, tableauIndex, startPos);
       }
 
       function canStartDragFromWaste(cardId) {
