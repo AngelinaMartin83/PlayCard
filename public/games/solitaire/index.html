@@ -857,11 +857,6 @@
       }
 
       function findUnlockedDependentMoveForRestoredAnchor(anchorCardId, targetIndex) {
-        const anchor = getCard(anchorCardId);
-        if (anchor.rank <= 1) {
-          return null;
-        }
-
         const tableauState = game.tableau.map(function (pile) {
           return pile.slice();
         });
@@ -869,14 +864,7 @@
 
         const movableCards = collectMovableCardsInState(game.tableau, game.waste);
         for (const candidate of movableCards) {
-          const candidateCard = getCard(candidate.cardId);
-          if (candidateCard.color === anchor.color || candidateCard.rank + 1 !== anchor.rank) {
-            continue;
-          }
           if (candidate.sourcePile.type === "tableau" && candidate.sourcePile.index === targetIndex) {
-            continue;
-          }
-          if (canMoveCardToFoundation(candidate.cardId)) {
             continue;
           }
           const currentDestinations = collectTableauDestinationsInState(
@@ -884,11 +872,15 @@
             candidate.sourcePile,
             game.tableau
           );
-          if (currentDestinations.length > 0) {
-            continue;
-          }
-          if (canPlaceOnTableauInState(candidate.cardId, targetIndex, tableauState)) {
-            return candidate;
+          const nextDestinations = collectTableauDestinationsInState(
+            candidate.cardId,
+            candidate.sourcePile,
+            tableauState
+          );
+          for (const destination of nextDestinations) {
+            if (!currentDestinations.includes(destination)) {
+              return candidate;
+            }
           }
         }
 
