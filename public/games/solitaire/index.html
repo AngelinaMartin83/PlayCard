@@ -933,6 +933,9 @@
           if (!cardId) {
             continue;
           }
+          if (getCard(cardId).rank <= 2) {
+            continue;
+          }
           for (let i = 0; i < game.tableau.length; i += 1) {
             if (!canPlaceOnTableau(cardId, i)) {
               continue;
