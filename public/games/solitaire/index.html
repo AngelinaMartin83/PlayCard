@@ -834,6 +834,61 @@
         return null;
       }
 
+      function findExternalMoveOntoTableauTarget(currentTableauState, nextTableauState, targetIndex) {
+        const wasteTop = topCardId(game.waste);
+        if (wasteTop) {
+          const currentDestinations = collectTableauDestinationsInState(
+            wasteTop,
+            { type: "waste" },
+            currentTableauState
+          );
+          const nextDestinations = collectTableauDestinationsInState(
+            wasteTop,
+            { type: "waste" },
+            nextTableauState
+          );
+          if (!currentDestinations.includes(targetIndex) && nextDestinations.includes(targetIndex)) {
+            return {
+              cardId: wasteTop,
+              sourcePile: { type: "waste" },
+              targetPile: { type: "tableau", index: targetIndex }
+            };
+          }
+        }
+
+        for (let from = 0; from < currentTableauState.length; from += 1) {
+          if (from === targetIndex) {
+            continue;
+          }
+          const pile = currentTableauState[from];
+          for (let start = 0; start < pile.length; start += 1) {
+            const moving = canStartDragFromTableauInState(currentTableauState, from, start);
+            if (!moving) {
+              continue;
+            }
+            const currentDestinations = collectTableauDestinationsInState(
+              moving[0],
+              { type: "tableau", index: from },
+              currentTableauState
+            );
+            const nextDestinations = collectTableauDestinationsInState(
+              moving[0],
+              { type: "tableau", index: from },
+              nextTableauState
+            );
+            if (!currentDestinations.includes(targetIndex) && nextDestinations.includes(targetIndex)) {
+              return {
+                cardId: moving[0],
+                sourcePile: { type: "tableau", index: from },
+                targetPile: { type: "tableau", index: targetIndex }
+              };
+            }
+          }
+        }
+
+        return null;
+      }
+
       function canAutoMoveCardToFoundation(source, cardId, options) {
         if (options && options.mechanical) {
           return true;
@@ -860,31 +915,16 @@
         const tableauState = game.tableau.map(function (pile) {
           return pile.slice();
         });
+        const foundationState = {
+          hearts: game.foundation.hearts.slice(),
+          diamonds: game.foundation.diamonds.slice(),
+          clubs: game.foundation.clubs.slice(),
+          spades: game.foundation.spades.slice()
+        };
+        const anchorSuit = getCard(anchorCardId).suit;
+        foundationState[anchorSuit].pop();
         tableauState[targetIndex].push(anchorCardId);
-
-        const movableCards = collectMovableCardsInState(game.tableau, game.waste);
-        for (const candidate of movableCards) {
-          if (candidate.sourcePile.type === "tableau" && candidate.sourcePile.index === targetIndex) {
-            continue;
-          }
-          const currentDestinations = collectTableauDestinationsInState(
-            candidate.cardId,
-            candidate.sourcePile,
-            game.tableau
-          );
-          const nextDestinations = collectTableauDestinationsInState(
-            candidate.cardId,
-            candidate.sourcePile,
-            tableauState
-          );
-          for (const destination of nextDestinations) {
-            if (!currentDestinations.includes(destination)) {
-              return candidate;
-            }
-          }
-        }
-
-        return null;
+        return findExternalMoveOntoTableauTarget(game.tableau, tableauState, targetIndex);
       }
 
       function findFoundationRecoveryHint() {
