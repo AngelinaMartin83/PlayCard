@@ -972,7 +972,12 @@
 
         for (let i = 0; i < game.tableau.length; i += 1) {
           const top = topCardId(game.tableau[i]);
-          if (top && getCard(top).faceUp && canMoveCardToFoundation(top)) {
+          if (
+            top &&
+            getCard(top).faceUp &&
+            canMoveCardToFoundation(top) &&
+            !findCriticalDependentForTableauAnchor(i, top, game.tableau, game.waste, game.foundation)
+          ) {
             return {
               sourceCardId: top,
               sourcePile: { type: "tableau", index: i },
@@ -1135,7 +1140,7 @@
             top &&
             getCard(top).faceUp &&
             canMoveCardToFoundation(top) &&
-            isSafeFoundationMove(top)
+            canAutoMoveCardToFoundation({ type: "tableau", index: i }, top)
           ) {
             return {
               sourceCardId: top,
