@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-const STORAGE_KEY = "solitaire:leaderboard";
+const STORAGE_KEY_PREFIX = "solitaire:leaderboard";
 const LIMIT = 10;
 const MAX_NAME_LENGTH = 20;
 const MAX_SECONDS = 24 * 60 * 60;
@@ -20,6 +20,14 @@ function normalizeName(name) {
   return name.trim().replace(/\s+/g, " ").slice(0, MAX_NAME_LENGTH) || "Player";
 }
 
+function normalizeDrawCount(drawCount) {
+  return Number(drawCount) === 3 ? 3 : 1;
+}
+
+function storageKey(drawCount) {
+  return `${STORAGE_KEY_PREFIX}:draw-${normalizeDrawCount(drawCount)}`;
+}
+
 function normalizeEntry(entry) {
   const seconds = Number(entry && entry.seconds);
   if (!Number.isFinite(seconds) || seconds < 0 || seconds > MAX_SECONDS) {
@@ -30,7 +38,7 @@ function normalizeEntry(entry) {
     id: typeof entry.id === "string" ? entry.id : randomUUID(),
     name: normalizeName(entry.name),
     seconds: Math.floor(seconds),
-    drawCount: entry.drawCount === 3 ? 3 : 1,
+    drawCount: normalizeDrawCount(entry.drawCount),
     completedAt: typeof entry.completedAt === "string" ? entry.completedAt : new Date().toISOString()
   };
 }
@@ -99,8 +107,8 @@ async function redisTransaction(commands) {
   return data;
 }
 
-async function readEntries() {
-  const result = await redisCommand(["ZRANGE", STORAGE_KEY, 0, LIMIT - 1]);
+async function readEntries(drawCount) {
+  const result = await redisCommand(["ZRANGE", storageKey(drawCount), 0, LIMIT - 1]);
   if (!Array.isArray(result)) {
     return [];
   }
@@ -115,10 +123,11 @@ async function readEntries() {
 }
 
 async function addEntry(body) {
+  const drawCount = normalizeDrawCount(body.drawCount);
   const entry = normalizeEntry({
     name: body.name,
     seconds: body.seconds,
-    drawCount: body.drawCount,
+    drawCount,
     completedAt: new Date().toISOString()
   });
 
@@ -129,17 +138,17 @@ async function addEntry(body) {
   }
 
   await redisTransaction([
-    ["ZADD", STORAGE_KEY, entry.seconds, JSON.stringify(entry)],
-    ["ZREMRANGEBYRANK", STORAGE_KEY, LIMIT, -1]
+    ["ZADD", storageKey(drawCount), entry.seconds, JSON.stringify(entry)],
+    ["ZREMRANGEBYRANK", storageKey(drawCount), LIMIT, -1]
   ]);
 
-  return readEntries();
+  return readEntries(drawCount);
 }
 
 export default async function handler(req, res) {
   try {
     if (req.method === "GET") {
-      sendJson(res, 200, { entries: await readEntries() });
+      sendJson(res, 200, { entries: await readEntries(req.query.drawCount) });
       return;
     }
 
