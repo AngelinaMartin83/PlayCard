@@ -27,6 +27,10 @@
       user-select: none;
     }
 
+    [hidden] {
+      display: none !important;
+    }
+
     body {
       margin: 0;
       font-family: "Trebuchet MS", "Segoe UI", sans-serif;
@@ -260,6 +264,105 @@
       width: fit-content;
     }
 
+    .leaderboard {
+      margin-top: 12px;
+      padding: 12px;
+      width: min(420px, 100%);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+    }
+
+    .leaderboard.is-hidden {
+      display: none;
+    }
+
+    .leaderboard-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .leaderboard-title {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .leaderboard-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .leaderboard-table th,
+    .leaderboard-table td {
+      padding: 7px 6px;
+      border-top: 1px solid rgba(255, 255, 255, 0.18);
+      text-align: left;
+    }
+
+    .leaderboard-table th:last-child,
+    .leaderboard-table td:last-child {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .leaderboard-empty {
+      margin: 0;
+      color: rgba(255, 255, 255, 0.76);
+      font-size: 13px;
+    }
+
+    .dialog-backdrop {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 20;
+    }
+
+    .dialog {
+      width: min(360px, 100%);
+      padding: 18px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.34);
+      background: #123f2a;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+    }
+
+    .dialog h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+
+    .dialog p {
+      margin: 0 0 14px;
+      color: rgba(255, 255, 255, 0.82);
+      line-height: 1.5;
+    }
+
+    .dialog input {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+      font: inherit;
+      user-select: text;
+    }
+
+    .dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
     @media (max-width: 1024px) {
       :root {
         --board-gap: clamp(4px, 1.2vw, 10px);
@@ -392,6 +495,14 @@
       .win-banner {
         width: 100%;
       }
+
+      .leaderboard-title {
+        font-size: 14px;
+      }
+
+      .leaderboard-table {
+        font-size: 12px;
+      }
     }
   </style>
 </head>
@@ -403,6 +514,7 @@
       <button id="undo-btn">撤销</button>
       <button id="auto-btn">自动收牌</button>
       <button id="hint-btn">提示</button>
+      <button id="leaderboard-toggle-btn">排行榜</button>
       <button id="sound-toggle-btn">音效: 开</button>
       <div class="status-group">
         <div class="status" id="status-text">准备中...</div>
@@ -422,6 +534,23 @@
       <div class="tableau-row" id="tableau-row"></div>
     </div>
     <div id="win-banner" class="win-banner" hidden>你赢了！点击“新游戏”再来一局。</div>
+    <section id="leaderboard" class="leaderboard" aria-live="polite">
+      <div class="leaderboard-header">
+        <h2 id="leaderboard-title" class="leaderboard-title">Top 10</h2>
+      </div>
+      <div id="leaderboard-list"></div>
+    </section>
+    <div id="leaderboard-dialog" class="dialog-backdrop" hidden>
+      <form class="dialog" id="leaderboard-form">
+        <h2 id="leaderboard-dialog-title">进入 Top 10！</h2>
+        <p id="leaderboard-dialog-message">输入名字记录本局成绩。</p>
+        <input id="leaderboard-name-input" name="playerName" maxlength="20" autocomplete="name" />
+        <div class="dialog-actions">
+          <button type="button" id="leaderboard-skip-btn">跳过</button>
+          <button type="submit" id="leaderboard-save-btn">记录</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <script src="./elements.cardmeister.full.js"></script>
@@ -430,6 +559,9 @@
       const SUITS = ["hearts", "diamonds", "clubs", "spades"];
       const FLIP_REVEAL_DELAY_MS = 380;
       const FLIP_ANIM_ACTIVE_MS = 520;
+      const LEADERBOARD_KEY = "play-card-solitaire-leaderboard-v1";
+      const LEADERBOARD_API_URL = window.SOLITAIRE_LEADERBOARD_API || "/api/leaderboard";
+      const LEADERBOARD_LIMIT = 10;
       const SUIT_SYMBOL = {
         hearts: "♥",
         diamonds: "♦",
@@ -468,11 +600,28 @@
               newGame: "New Game",
               undo: "Undo",
               auto: "Auto Finish",
-              hint: "Hint"
+              hint: "Hint",
+              leaderboard: "Leaderboard"
             },
             statusReady: "Preparing...",
             statusWon: "Victory",
             winBanner: "You won! Click “New Game” to play again.",
+            leaderboardTitle: "Top 10 Fastest Wins",
+            leaderboardEmpty: "No completed games yet.",
+            leaderboardRank: "#",
+            leaderboardName: "Name",
+            leaderboardTime: "Time",
+            leaderboardMode: function (drawCount) {
+              return "Draw " + drawCount;
+            },
+            leaderboardDialogTitle: "You made the Top 10!",
+            leaderboardDialogMessage: function (time) {
+              return "Your time was " + time + ". Enter your name to save it.";
+            },
+            leaderboardInputPlaceholder: "Your name",
+            leaderboardSkip: "Skip",
+            leaderboardSave: "Save",
+            leaderboardDefaultName: "Player",
             wasteEmpty: "Waste",
             autoNoSafeMove: "Auto finish: there are no safe cards to move right now",
             deadEnd: "Hint: no more legal moves are available right now",
@@ -513,11 +662,28 @@
               newGame: "新游戏",
               undo: "撤销",
               auto: "自动收牌",
-              hint: "提示"
+              hint: "提示",
+              leaderboard: "排行榜"
             },
             statusReady: "准备中...",
             statusWon: "胜利",
             winBanner: "你赢了！点击“新游戏”再来一局。",
+            leaderboardTitle: "最快通关 Top 10",
+            leaderboardEmpty: "还没有通关记录。",
+            leaderboardRank: "排名",
+            leaderboardName: "名字",
+            leaderboardTime: "时间",
+            leaderboardMode: function (drawCount) {
+              return "抽 " + drawCount;
+            },
+            leaderboardDialogTitle: "进入 Top 10！",
+            leaderboardDialogMessage: function (time) {
+              return "本局用时 " + time + "，输入名字记录成绩。";
+            },
+            leaderboardInputPlaceholder: "你的名字",
+            leaderboardSkip: "跳过",
+            leaderboardSave: "记录",
+            leaderboardDefaultName: "玩家",
             wasteEmpty: "废牌",
             autoNoSafeMove: "自动收牌：当前没有可安全移动的牌",
             deadEnd: "提示: 死局，当前无法继续进行了",
@@ -565,6 +731,7 @@
         btnUndo: document.getElementById("undo-btn"),
         btnAuto: document.getElementById("auto-btn"),
         btnHint: document.getElementById("hint-btn"),
+        btnLeaderboardToggle: document.getElementById("leaderboard-toggle-btn"),
         btnSoundToggle: document.getElementById("sound-toggle-btn"),
         foundations: {
           hearts: document.getElementById("foundation-hearts"),
@@ -572,7 +739,17 @@
           clubs: document.getElementById("foundation-clubs"),
           spades: document.getElementById("foundation-spades")
         },
-        winBanner: document.getElementById("win-banner")
+        winBanner: document.getElementById("win-banner"),
+        leaderboard: document.getElementById("leaderboard"),
+        leaderboardTitle: document.getElementById("leaderboard-title"),
+        leaderboardList: document.getElementById("leaderboard-list"),
+        leaderboardDialog: document.getElementById("leaderboard-dialog"),
+        leaderboardForm: document.getElementById("leaderboard-form"),
+        leaderboardDialogTitle: document.getElementById("leaderboard-dialog-title"),
+        leaderboardDialogMessage: document.getElementById("leaderboard-dialog-message"),
+        leaderboardNameInput: document.getElementById("leaderboard-name-input"),
+        btnLeaderboardSkip: document.getElementById("leaderboard-skip-btn"),
+        btnLeaderboardSave: document.getElementById("leaderboard-save-btn")
       };
 
       const game = {
@@ -593,6 +770,7 @@
         flipTimeoutId: null,
         timerId: null,
         elapsedSeconds: 0,
+        winRecorded: false,
         windowActive: true,
         audioAssets: {},
         hint: null,
@@ -688,6 +866,7 @@
         game.dragPayload = null;
         game.animatingFlip = false;
         game.elapsedSeconds = 0;
+        game.winRecorded = false;
 
         let cursor = 0;
         for (let col = 0; col < 7; col += 1) {
@@ -1399,6 +1578,7 @@
         if (complete && game.status !== "won") {
           game.status = "won";
           playSound("win");
+          handleWinComplete();
         }
       }
 
@@ -2028,16 +2208,198 @@
         els.btnUndo.textContent = COPY.buttons.undo;
         els.btnAuto.textContent = COPY.buttons.auto;
         els.btnHint.textContent = COPY.buttons.hint;
+        els.btnLeaderboardToggle.textContent = COPY.buttons.leaderboard;
         els.btnDrawToggle.textContent = COPY.drawButton(SETTINGS.drawCount);
         els.btnSoundToggle.textContent = COPY.soundButton(SETTINGS.soundEnabled);
         els.status.textContent = COPY.statusReady;
         els.winBanner.textContent = COPY.winBanner;
+        els.leaderboardTitle.textContent = COPY.leaderboardTitle;
+        els.leaderboardDialogTitle.textContent = COPY.leaderboardDialogTitle;
+        els.leaderboardNameInput.placeholder = COPY.leaderboardInputPlaceholder;
+        els.btnLeaderboardSkip.textContent = COPY.leaderboardSkip;
+        els.btnLeaderboardSave.textContent = COPY.leaderboardSave;
+        renderLeaderboard();
       }
 
       function formatSeconds(seconds) {
         const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
         const ss = String(seconds % 60).padStart(2, "0");
         return mm + ":" + ss;
+      }
+
+      function normalizeLeaderboard(entries) {
+        if (!Array.isArray(entries)) {
+          return [];
+        }
+        return entries
+          .filter(function (entry) {
+            return (
+              entry &&
+              typeof entry.name === "string" &&
+              Number.isFinite(entry.seconds) &&
+              entry.seconds >= 0
+            );
+          })
+          .sort(function (a, b) {
+            return a.seconds - b.seconds;
+          })
+          .slice(0, LEADERBOARD_LIMIT);
+      }
+
+      function loadLocalLeaderboard() {
+        try {
+          const parsed = JSON.parse(window.localStorage.getItem(LEADERBOARD_KEY) || "[]");
+          return normalizeLeaderboard(parsed);
+        } catch (error) {
+          return [];
+        }
+      }
+
+      function saveLocalLeaderboard(entries) {
+        window.localStorage.setItem(
+          LEADERBOARD_KEY,
+          JSON.stringify(normalizeLeaderboard(entries))
+        );
+      }
+
+      function fetchWithTimeout(url, options) {
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(function () {
+          controller.abort();
+        }, 4000);
+        return window.fetch(url, Object.assign({}, options, { signal: controller.signal }))
+          .finally(function () {
+            window.clearTimeout(timeoutId);
+          });
+      }
+
+      function requestLeaderboard(options) {
+        return fetchWithTimeout(LEADERBOARD_API_URL, Object.assign({
+          headers: { "Content-Type": "application/json" }
+        }, options || {}))
+          .then(function (response) {
+            if (!response.ok) {
+              throw new Error("Leaderboard request failed");
+            }
+            return response.json();
+          })
+          .then(function (data) {
+            return normalizeLeaderboard(data.entries);
+          });
+      }
+
+      function loadLeaderboard() {
+        return requestLeaderboard()
+          .then(function (entries) {
+            saveLocalLeaderboard(entries);
+            return entries;
+          })
+          .catch(function () {
+            return loadLocalLeaderboard();
+          });
+      }
+
+      function qualifiesForLeaderboard(seconds, entries) {
+        return entries.length < LEADERBOARD_LIMIT || seconds < entries[entries.length - 1].seconds;
+      }
+
+      function addLeaderboardEntry(name, seconds) {
+        const cleanName = name.trim().replace(/\s+/g, " ").slice(0, 20) || COPY.leaderboardDefaultName;
+        const entry = {
+          name: cleanName,
+          seconds,
+          drawCount: SETTINGS.drawCount,
+          completedAt: new Date().toISOString()
+        };
+
+        return requestLeaderboard({
+          method: "POST",
+          body: JSON.stringify(entry)
+        })
+          .then(function (entries) {
+            saveLocalLeaderboard(entries);
+            renderLeaderboard(entries);
+          })
+          .catch(function () {
+            const entries = loadLocalLeaderboard();
+            entries.push(entry);
+            const normalized = normalizeLeaderboard(entries);
+            saveLocalLeaderboard(normalized);
+            renderLeaderboard(normalized);
+          });
+      }
+
+      function renderLeaderboard(entries) {
+        if (!entries) {
+          loadLeaderboard().then(function (loadedEntries) {
+            renderLeaderboard(loadedEntries);
+          });
+          return;
+        }
+
+        entries = normalizeLeaderboard(entries);
+        if (!entries.length) {
+          els.leaderboardList.innerHTML = "";
+          const empty = document.createElement("p");
+          empty.className = "leaderboard-empty";
+          empty.textContent = COPY.leaderboardEmpty;
+          els.leaderboardList.appendChild(empty);
+          return;
+        }
+
+        const table = document.createElement("table");
+        table.className = "leaderboard-table";
+        const thead = document.createElement("thead");
+        const headerRow = document.createElement("tr");
+        [COPY.leaderboardRank, COPY.leaderboardName, COPY.leaderboardTime].forEach(function (label) {
+          const th = document.createElement("th");
+          th.textContent = label;
+          headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        const tbody = document.createElement("tbody");
+        entries.forEach(function (entry, index) {
+          const row = document.createElement("tr");
+          const rank = document.createElement("td");
+          const name = document.createElement("td");
+          const time = document.createElement("td");
+          rank.textContent = String(index + 1);
+          name.textContent = entry.name + " · " + COPY.leaderboardMode(entry.drawCount || 1);
+          time.textContent = formatSeconds(entry.seconds);
+          row.append(rank, name, time);
+          tbody.appendChild(row);
+        });
+        table.appendChild(tbody);
+
+        els.leaderboardList.innerHTML = "";
+        els.leaderboardList.appendChild(table);
+      }
+
+      function handleWinComplete() {
+        if (game.winRecorded) {
+          return;
+        }
+        game.winRecorded = true;
+        loadLeaderboard().then(function (entries) {
+          renderLeaderboard(entries);
+          if (!qualifiesForLeaderboard(game.elapsedSeconds, entries)) {
+            return;
+          }
+          els.leaderboardDialogMessage.textContent =
+            COPY.leaderboardDialogMessage(formatSeconds(game.elapsedSeconds));
+          els.leaderboardNameInput.value = "";
+          els.leaderboard.classList.remove("is-hidden");
+          els.leaderboardDialog.hidden = false;
+          window.setTimeout(function () {
+            els.leaderboardNameInput.focus();
+          }, 0);
+        });
+      }
+
+      function closeLeaderboardDialog() {
+        els.leaderboardDialog.hidden = true;
       }
 
       function pageHasFocus() {
@@ -2101,6 +2463,13 @@
           showHint();
         });
 
+        els.btnLeaderboardToggle.addEventListener("click", function () {
+          els.leaderboard.classList.toggle("is-hidden");
+          if (!els.leaderboard.classList.contains("is-hidden")) {
+            renderLeaderboard();
+          }
+        });
+
         els.btnSoundToggle.addEventListener("click", function () {
           SETTINGS.soundEnabled = !SETTINGS.soundEnabled;
           els.btnSoundToggle.textContent = COPY.soundButton(SETTINGS.soundEnabled);
@@ -2112,6 +2481,16 @@
 
         els.stock.addEventListener("click", function () {
           drawFromStock();
+        });
+
+        els.leaderboardForm.addEventListener("submit", function (event) {
+          event.preventDefault();
+          addLeaderboardEntry(els.leaderboardNameInput.value, game.elapsedSeconds);
+          closeLeaderboardDialog();
+        });
+
+        els.btnLeaderboardSkip.addEventListener("click", function () {
+          closeLeaderboardDialog();
         });
       }
 
