@@ -264,13 +264,31 @@
       width: fit-content;
     }
 
+    .leaderboard-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.38);
+      z-index: 14;
+    }
+
+    .leaderboard-backdrop.is-hidden {
+      display: none;
+    }
+
     .leaderboard {
-      margin-top: 12px;
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
       padding: 12px;
-      width: min(420px, 100%);
+      width: min(420px, calc(100vw - 32px));
+      max-height: min(70vh, 620px);
+      overflow: auto;
       border-radius: 8px;
-      background: rgba(255, 255, 255, 0.14);
+      background: rgba(18, 63, 42, 0.98);
       border: 1px solid rgba(255, 255, 255, 0.28);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
+      z-index: 15;
     }
 
     .leaderboard.is-hidden {
@@ -288,6 +306,17 @@
     .leaderboard-title {
       margin: 0;
       font-size: 16px;
+    }
+
+    .leaderboard-close {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      font-size: 22px;
+      line-height: 1;
+      flex: none;
     }
 
     .leaderboard-table {
@@ -534,9 +563,11 @@
       <div class="tableau-row" id="tableau-row"></div>
     </div>
     <div id="win-banner" class="win-banner" hidden>你赢了！点击“新游戏”再来一局。</div>
+    <div id="leaderboard-backdrop" class="leaderboard-backdrop is-hidden"></div>
     <section id="leaderboard" class="leaderboard is-hidden" aria-live="polite">
       <div class="leaderboard-header">
         <h2 id="leaderboard-title" class="leaderboard-title">Top 10</h2>
+        <button id="leaderboard-close-btn" class="leaderboard-close" type="button" aria-label="关闭排行榜">×</button>
       </div>
       <div id="leaderboard-list"></div>
     </section>
@@ -744,7 +775,9 @@
           spades: document.getElementById("foundation-spades")
         },
         winBanner: document.getElementById("win-banner"),
+        leaderboardBackdrop: document.getElementById("leaderboard-backdrop"),
         leaderboard: document.getElementById("leaderboard"),
+        btnLeaderboardClose: document.getElementById("leaderboard-close-btn"),
         leaderboardTitle: document.getElementById("leaderboard-title"),
         leaderboardList: document.getElementById("leaderboard-list"),
         leaderboardDialog: document.getElementById("leaderboard-dialog"),
@@ -2404,7 +2437,7 @@
           els.leaderboardDialogMessage.textContent =
             COPY.leaderboardDialogMessage(formatSeconds(game.elapsedSeconds));
           els.leaderboardNameInput.value = "";
-          els.leaderboard.classList.remove("is-hidden");
+          showLeaderboard();
           els.leaderboardDialog.hidden = false;
           window.setTimeout(function () {
             els.leaderboardNameInput.focus();
@@ -2414,6 +2447,21 @@
 
       function closeLeaderboardDialog() {
         els.leaderboardDialog.hidden = true;
+      }
+
+      function isLeaderboardOpen() {
+        return !els.leaderboard.classList.contains("is-hidden");
+      }
+
+      function showLeaderboard() {
+        els.leaderboardBackdrop.classList.remove("is-hidden");
+        els.leaderboard.classList.remove("is-hidden");
+        renderLeaderboard();
+      }
+
+      function hideLeaderboard() {
+        els.leaderboard.classList.add("is-hidden");
+        els.leaderboardBackdrop.classList.add("is-hidden");
       }
 
       function pageHasFocus() {
@@ -2462,7 +2510,7 @@
         els.btnDrawToggle.addEventListener("click", function () {
           SETTINGS.drawCount = SETTINGS.drawCount === 1 ? 3 : 1;
           els.btnDrawToggle.textContent = COPY.drawButton(SETTINGS.drawCount);
-          if (!els.leaderboard.classList.contains("is-hidden")) {
+          if (isLeaderboardOpen()) {
             renderLeaderboard();
           } else {
             els.leaderboardTitle.textContent = COPY.leaderboardTitle(SETTINGS.drawCount);
@@ -2483,10 +2531,19 @@
         });
 
         els.btnLeaderboardToggle.addEventListener("click", function () {
-          els.leaderboard.classList.toggle("is-hidden");
-          if (!els.leaderboard.classList.contains("is-hidden")) {
-            renderLeaderboard();
+          if (isLeaderboardOpen()) {
+            hideLeaderboard();
+            return;
           }
+          showLeaderboard();
+        });
+
+        els.btnLeaderboardClose.addEventListener("click", function () {
+          hideLeaderboard();
+        });
+
+        els.leaderboardBackdrop.addEventListener("click", function () {
+          hideLeaderboard();
         });
 
         els.btnSoundToggle.addEventListener("click", function () {
