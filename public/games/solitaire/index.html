@@ -808,6 +808,7 @@
         timerId: null,
         elapsedSeconds: 0,
         winRecorded: false,
+        pendingLeaderboardEntry: null,
         windowActive: true,
         audioAssets: {},
         hint: null,
@@ -2314,13 +2315,14 @@
           });
       }
 
-      function leaderboardUrl() {
+      function leaderboardUrl(drawCount) {
+        const targetDrawCount = drawCount === undefined ? SETTINGS.drawCount : drawCount;
         const separator = LEADERBOARD_API_URL.includes("?") ? "&" : "?";
-        return LEADERBOARD_API_URL + separator + "drawCount=" + SETTINGS.drawCount;
+        return LEADERBOARD_API_URL + separator + "drawCount=" + (targetDrawCount === 3 ? 3 : 1);
       }
 
-      function requestLeaderboard(options) {
-        return fetchWithTimeout(leaderboardUrl(), Object.assign({
+      function requestLeaderboard(options, drawCount) {
+        return fetchWithTimeout(leaderboardUrl(drawCount), Object.assign({
           headers: { "Content-Type": "application/json" }
         }, options || {}))
           .then(function (response) {
@@ -2334,14 +2336,15 @@
           });
       }
 
-      function loadLeaderboard() {
-        return requestLeaderboard()
+      function loadLeaderboard(drawCount) {
+        const targetDrawCount = drawCount === undefined ? SETTINGS.drawCount : (drawCount === 3 ? 3 : 1);
+        return requestLeaderboard(null, targetDrawCount)
           .then(function (entries) {
-            saveLocalLeaderboard(entries, SETTINGS.drawCount);
+            saveLocalLeaderboard(entries, targetDrawCount);
             return entries;
           })
           .catch(function () {
-            return loadLocalLeaderboard(SETTINGS.drawCount);
+            return loadLocalLeaderboard(targetDrawCount);
           });
       }
 
@@ -2349,37 +2352,39 @@
         return entries.length < LEADERBOARD_LIMIT || seconds < entries[entries.length - 1].seconds;
       }
 
-      function addLeaderboardEntry(name, seconds) {
+      function addLeaderboardEntry(name, leaderboardEntry) {
+        const entryDrawCount = leaderboardEntry.drawCount === 3 ? 3 : 1;
         const cleanName = name.trim().replace(/\s+/g, " ").slice(0, 20) || COPY.leaderboardDefaultName;
         const entry = {
           name: cleanName,
-          seconds,
-          drawCount: SETTINGS.drawCount,
+          seconds: leaderboardEntry.seconds,
+          drawCount: entryDrawCount,
           completedAt: new Date().toISOString()
         };
 
         return requestLeaderboard({
           method: "POST",
           body: JSON.stringify(entry)
-        })
+        }, entryDrawCount)
           .then(function (entries) {
-            saveLocalLeaderboard(entries, SETTINGS.drawCount);
-            renderLeaderboard(entries);
+            saveLocalLeaderboard(entries, entryDrawCount);
+            renderLeaderboard(entries, entryDrawCount);
           })
           .catch(function () {
-            const entries = loadLocalLeaderboard(SETTINGS.drawCount);
+            const entries = loadLocalLeaderboard(entryDrawCount);
             entries.push(entry);
             const normalized = normalizeLeaderboard(entries);
-            saveLocalLeaderboard(normalized, SETTINGS.drawCount);
-            renderLeaderboard(normalized);
+            saveLocalLeaderboard(normalized, entryDrawCount);
+            renderLeaderboard(normalized, entryDrawCount);
           });
       }
 
-      function renderLeaderboard(entries) {
-        els.leaderboardTitle.textContent = COPY.leaderboardTitle(SETTINGS.drawCount);
+      function renderLeaderboard(entries, drawCount) {
+        const targetDrawCount = drawCount === undefined ? SETTINGS.drawCount : (drawCount === 3 ? 3 : 1);
+        els.leaderboardTitle.textContent = COPY.leaderboardTitle(targetDrawCount);
         if (!entries) {
-          loadLeaderboard().then(function (loadedEntries) {
-            renderLeaderboard(loadedEntries);
+          loadLeaderboard(targetDrawCount).then(function (loadedEntries) {
+            renderLeaderboard(loadedEntries, targetDrawCount);
           });
           return;
         }
@@ -2429,15 +2434,21 @@
           return;
         }
         game.winRecorded = true;
-        loadLeaderboard().then(function (entries) {
-          renderLeaderboard(entries);
-          if (!qualifiesForLeaderboard(game.elapsedSeconds, entries)) {
+        const leaderboardEntry = {
+          seconds: game.elapsedSeconds,
+          drawCount: SETTINGS.drawCount
+        };
+        game.pendingLeaderboardEntry = leaderboardEntry;
+        loadLeaderboard(leaderboardEntry.drawCount).then(function (entries) {
+          renderLeaderboard(entries, leaderboardEntry.drawCount);
+          if (!qualifiesForLeaderboard(leaderboardEntry.seconds, entries)) {
+            game.pendingLeaderboardEntry = null;
             return;
           }
           els.leaderboardDialogMessage.textContent =
-            COPY.leaderboardDialogMessage(formatSeconds(game.elapsedSeconds));
+            COPY.leaderboardDialogMessage(formatSeconds(leaderboardEntry.seconds));
           els.leaderboardNameInput.value = "";
-          showLeaderboard();
+          showLeaderboard(leaderboardEntry.drawCount);
           els.leaderboardDialog.hidden = false;
           window.setTimeout(function () {
             els.leaderboardNameInput.focus();
@@ -2447,16 +2458,18 @@
 
       function closeLeaderboardDialog() {
         els.leaderboardDialog.hidden = true;
+        game.pendingLeaderboardEntry = null;
       }
 
       function isLeaderboardOpen() {
         return !els.leaderboard.classList.contains("is-hidden");
       }
 
-      function showLeaderboard() {
+      function showLeaderboard(drawCount) {
+        const targetDrawCount = drawCount === undefined ? SETTINGS.drawCount : (drawCount === 3 ? 3 : 1);
         els.leaderboardBackdrop.classList.remove("is-hidden");
         els.leaderboard.classList.remove("is-hidden");
-        renderLeaderboard();
+        renderLeaderboard(null, targetDrawCount);
       }
 
       function hideLeaderboard() {
@@ -2561,7 +2574,11 @@
 
         els.leaderboardForm.addEventListener("submit", function (event) {
           event.preventDefault();
-          addLeaderboardEntry(els.leaderboardNameInput.value, game.elapsedSeconds);
+          const leaderboardEntry = game.pendingLeaderboardEntry || {
+            seconds: game.elapsedSeconds,
+            drawCount: SETTINGS.drawCount
+          };
+          addLeaderboardEntry(els.leaderboardNameInput.value, leaderboardEntry);
           closeLeaderboardDialog();
         });
 
