@@ -1858,41 +1858,51 @@
         return candidates;
       }
 
+      function applyAutoCandidate(candidate) {
+        const currentTop = candidate.source.type === "waste"
+          ? topCardId(game.waste)
+          : topCardId(game.tableau[candidate.source.index]);
+        if (currentTop !== candidate.cardId || !canMoveCardToFoundation(candidate.cardId)) {
+          return false;
+        }
+
+        pushHistory();
+        if (candidate.source.type === "waste") {
+          game.waste.pop();
+        } else {
+          game.tableau[candidate.source.index].pop();
+          maybeFlipTopTableauCard(candidate.source.index);
+        }
+        const suit = getCard(candidate.cardId).suit;
+        game.foundation[suit].push(candidate.cardId);
+        playSound("foundation");
+        setWinIfComplete();
+        return true;
+      }
+
       function autoCollectToFoundation() {
         if (isInputLocked()) {
           return;
         }
         clearHint();
-        const mechanical = isMechanicalEndgame();
         let movedAny = false;
 
-        while (true) {
+        while (game.status === "playing") {
+          const mechanical = isMechanicalEndgame();
           const candidates = collectAutoCandidates();
-          let moved = false;
+          let selected = null;
           for (const c of candidates) {
             if (!mechanical && !isSafeFoundationMove(c.cardId)) {
               continue;
             }
-            pushHistory();
-            if (c.source.type === "waste") {
-              game.waste.pop();
-            } else {
-              game.tableau[c.source.index].pop();
-              maybeFlipTopTableauCard(c.source.index);
-            }
-            const suit = getCard(c.cardId).suit;
-            game.foundation[suit].push(c.cardId);
-            playSound("foundation");
-            moved = true;
-            movedAny = true;
-            setWinIfComplete();
-            if (game.status === "won") {
-              break;
-            }
-          }
-          if (!moved || game.status === "won") {
+            selected = c;
             break;
           }
+
+          if (!selected || !applyAutoCandidate(selected)) {
+            break;
+          }
+          movedAny = true;
         }
 
         if (movedAny) {
