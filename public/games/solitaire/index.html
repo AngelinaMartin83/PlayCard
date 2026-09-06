@@ -656,7 +656,7 @@
             leaderboardSave: "Save",
             leaderboardDefaultName: "Player",
             wasteEmpty: "Waste",
-            autoNoSafeMove: "Auto finish: there are no safe cards to move right now",
+            autoNoLegalMove: "Auto finish: there are no legal cards to collect right now",
             deadEnd: "Hint: no more legal moves are available right now",
             hintPrefix: "Hint: ",
             drawButton: function (count) {
@@ -720,7 +720,7 @@
             leaderboardSave: "记录",
             leaderboardDefaultName: "玩家",
             wasteEmpty: "废牌",
-            autoNoSafeMove: "自动收牌：当前没有可安全移动的牌",
+            autoNoLegalMove: "自动收牌：当前没有可回收的合法牌",
             deadEnd: "提示: 死局，当前无法继续进行了",
             hintPrefix: "提示: ",
             drawButton: function (count) {
@@ -1828,20 +1828,6 @@
         return minOpposing >= card.rank - 1;
       }
 
-      function isMechanicalEndgame() {
-        if (game.stock.length > 0 || game.waste.length > 0) {
-          return false;
-        }
-        for (const pile of game.tableau) {
-          for (const cardId of pile) {
-            if (!getCard(cardId).faceUp) {
-              return false;
-            }
-          }
-        }
-        return true;
-      }
-
       function collectAutoCandidates() {
         const candidates = [];
         const wasteTop = topCardId(game.waste);
@@ -1888,16 +1874,8 @@
         let movedAny = false;
 
         while (game.status === "playing") {
-          const mechanical = isMechanicalEndgame();
           const candidates = collectAutoCandidates();
-          let selected = null;
-          for (const c of candidates) {
-            if (!mechanical && !isSafeFoundationMove(c.cardId)) {
-              continue;
-            }
-            selected = c;
-            break;
-          }
+          const selected = candidates.length ? candidates[0] : null;
 
           if (!selected || !applyAutoCandidate(selected)) {
             break;
@@ -1908,7 +1886,7 @@
         if (movedAny) {
           renderAll();
         } else {
-          els.status.textContent = COPY.autoNoSafeMove;
+          els.status.textContent = COPY.autoNoLegalMove;
         }
       }
 
